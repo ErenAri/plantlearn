@@ -2,11 +2,10 @@ import { fontFamily, fontSize } from '@/constants/Tokens'
 import { useTheme } from '@/hooks/useTheme'
 import { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import Animated, {
-  useAnimatedProps,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+import {
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming
 } from 'react-native-reanimated'
 
 interface CountdownTimerProps {

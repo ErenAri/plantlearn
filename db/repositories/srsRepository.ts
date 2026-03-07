@@ -1,6 +1,6 @@
+import { getDevNow, getDevNowIso } from '@/dev/clock'
 import { getDb } from '../client'
 import type { SrsCardRecord } from '../types'
-import { getDevNow, getDevNowIso } from '@/dev/clock'
 
 const CARD_COLUMNS = 'id, word, meaning, example, interval, ease, dueDate, lastReview, lapses'
 

@@ -1,48 +1,14 @@
 export { getDb } from './client'
 export { initializeDb, resetDb } from './init'
 export { runMigrations } from './migrations'
-export { seedIfEmpty } from './seeds'
 export {
-	getActivePlant,
-	upsertPlantProgress,
-	getStreak,
-	updateStreak,
-	getDueCards,
-	getDueCount,
-	reviewCard,
-	getLearnedCardCount,
-	logSession,
-	listSessions,
-	getTotalSessionCount,
-	getSessionCountBySkill,
-	getPerfectSessionCount,
-	getTotalLearningTimeSec,
-	getAverageAccuracyBySkill,
-	getRecentAccuracy,
-	getOrCreateDailyQuests,
-	incrementQuestProgress,
-	getWeekSessionCount,
-	getUnlockedSkins,
-	unlockSkin,
-	getSkinUnlockedForWeek,
-	getSetting,
-	setSetting,
-	getUnlockedAchievements,
-	isAchievementUnlocked,
-	unlockAchievement,
-	getAchievementCount,
+    getAchievementCount, getActivePlant, getAverageAccuracyBySkill, getDueCards,
+    getDueCount, getLearnedCardCount, getOrCreateDailyQuests, getPerfectSessionCount, getRecentAccuracy, getSessionCountBySkill, getSetting, getSkinUnlockedForWeek, getStreak, getTotalLearningTimeSec, getTotalSessionCount, getUnlockedAchievements, getUnlockedSkins, getWeekSessionCount, incrementQuestProgress, isAchievementUnlocked, listSessions, logSession, reviewCard, setSetting, unlockAchievement, unlockSkin, updateStreak, upsertPlantProgress
 } from './repositories'
+export { seedIfEmpty } from './seeds'
 export type {
-	PlantRecord,
-	StreakRecord,
-	SrsCardRecord,
-	SessionRecord,
-	SessionRow,
-	PlantProgressPatch,
-	DailyQuestRecord,
-	UnlockedSkinRecord,
-	UserSettingRecord,
-	AchievementTier,
-	AchievementRecord,
+    AchievementRecord, AchievementTier, DailyQuestRecord, PlantProgressPatch, PlantRecord, SessionRecord,
+    SessionRow, SrsCardRecord, StreakRecord, UnlockedSkinRecord,
+    UserSettingRecord
 } from './types'
 

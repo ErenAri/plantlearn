@@ -1,5 +1,5 @@
+import { PLANT_SKINS, WEEKLY_MILESTONE_TARGET } from './config'
 import type { DailyQuestId, DailyQuestState, WeeklyMilestoneState } from './types'
-import { WEEKLY_MILESTONE_TARGET, PLANT_SKINS } from './config'
 
 export interface QuestDefinition {
   id: DailyQuestId

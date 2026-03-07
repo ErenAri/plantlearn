@@ -1,5 +1,4 @@
 import { getDevTodayKey } from '@/dev/clock'
-import type { Difficulty } from './types'
 
 export interface DailyChallenge {
   id: string

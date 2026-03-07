@@ -2,8 +2,8 @@ import { spacing } from '@/constants/Tokens'
 import { useTheme } from '@/hooks/useTheme'
 import { StyleSheet, View } from 'react-native'
 import Animated, {
-  useAnimatedStyle,
-  withTiming,
+    useAnimatedStyle,
+    withTiming,
 } from 'react-native-reanimated'
 
 interface StepIndicatorProps {

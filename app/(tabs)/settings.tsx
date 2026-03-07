@@ -2,6 +2,7 @@ import { Button, Card } from '@/components/ui'
 import { radius, spacing, typography } from '@/constants/Tokens'
 import { getSetting, getUnlockedAchievements, getUnlockedSkins, resetDb, setSetting, type AchievementRecord } from '@/db'
 import { ACHIEVEMENT_DEFS, PLANT_SKINS } from '@/gameplay'
+import { setSoundMuted } from '@/hooks/useAudio'
 import { setHapticsMuted } from '@/hooks/useHaptics'
 import {
     getNotificationSettings,
@@ -10,12 +11,11 @@ import {
     syncNotifications,
 } from '@/hooks/useNotifications'
 import { useTheme } from '@/hooks/useTheme'
-import { setSoundMuted } from '@/hooks/useAudio'
 import i18n from '@/i18n'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StyleSheet, Text, View, ScrollView } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
 const HOUR_OPTIONS = [7, 8, 9, 10, 12, 14, 17, 19, 20, 21]
 

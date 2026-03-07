@@ -1,5 +1,5 @@
-import type { SQLiteDatabase } from 'expo-sqlite'
 import { getDevNowIso } from '@/dev/clock'
+import type { SQLiteDatabase } from 'expo-sqlite'
 import type { CefrLevel } from './types'
 
 interface SeedCard {

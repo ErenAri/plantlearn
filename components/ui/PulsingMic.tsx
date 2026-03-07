@@ -2,11 +2,11 @@ import { useTheme } from '@/hooks/useTheme'
 import { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from 'react-native-reanimated'
 
 interface PulsingMicProps {

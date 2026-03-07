@@ -1,6 +1,6 @@
+import { getSetting } from '@/db'
 import { Audio } from 'expo-av'
 import { useCallback, useEffect, useRef } from 'react'
-import { getSetting } from '@/db'
 
 type SoundName = 'correct' | 'wrong' | 'levelUp' | 'complete' | 'tap'
 

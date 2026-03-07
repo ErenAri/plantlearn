@@ -1,7 +1,7 @@
+import { getSetting } from '@/db'
 import * as Haptics from 'expo-haptics'
 import { useCallback } from 'react'
 import { Platform } from 'react-native'
-import { getSetting } from '@/db'
 
 let muted = false
 

@@ -1,5 +1,5 @@
-import { getAverageAccuracyBySkill, getLearnedCardCount } from '@/db'
-import type { Difficulty, SkillType } from './types'
+import { getAverageAccuracyBySkill } from '@/db';
+import type { SkillType } from './types';
 
 /**
  * Determine recommended difficulty distribution based on user's past accuracy.

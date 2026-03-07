@@ -3,9 +3,9 @@ import { useHaptics } from '@/hooks/useHaptics'
 import { useTheme } from '@/hooks/useTheme'
 import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native'
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
 } from 'react-native-reanimated'
 
 type Variant = 'primary' | 'secondary' | 'ghost'

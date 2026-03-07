@@ -38,10 +38,9 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
-    withRepeat,
     withSequence,
     withSpring,
-    withTiming,
+    withTiming
 } from 'react-native-reanimated'
 
 function HealthBar({ health, theme }: { health: number; theme: ReturnType<typeof useTheme> }) {
