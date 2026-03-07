@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { getSetting, setSetting } from '@/db'
+import i18n from '@/i18n'
 
 const DAILY_ID = 'daily-reminder'
 const STREAK_RISK_ID = 'streak-risk'
@@ -39,8 +40,8 @@ export async function syncNotifications(
     await Notifications.scheduleNotificationAsync({
       identifier: DAILY_ID,
       content: {
-        title: '🌱 Time to learn!',
-        body: 'Your plant is waiting. Start a quick session!',
+        title: i18n.t('notifications.dailyTitle'),
+        body: i18n.t('notifications.dailyBody'),
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -54,8 +55,8 @@ export async function syncNotifications(
       await Notifications.scheduleNotificationAsync({
         identifier: STREAK_RISK_ID,
         content: {
-          title: '🌿 Quick check-in',
-          body: 'Your plant needs a quick check-in',
+          title: i18n.t('notifications.streakRiskTitle'),
+          body: i18n.t('notifications.streakRiskBody'),
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,

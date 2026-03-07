@@ -3,6 +3,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { useWords } from '@/hooks/useWords'
 import { Card } from '@/components/ui'
 import { spacing, typography, radius } from '@/constants/Tokens'
+import { useTranslation } from 'react-i18next'
 
 function LevelBadge({ interval, color }: { interval: number; color: string }) {
   return (
@@ -15,11 +16,12 @@ function LevelBadge({ interval, color }: { interval: number; color: string }) {
 export default function CollectionScreen() {
   const theme = useTheme()
   const { words, loading } = useWords()
+  const { t } = useTranslation()
 
   if (loading) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
-        <Text style={[typography.body, { color: theme.textSecondary }]}>Loading...</Text>
+        <Text style={[typography.body, { color: theme.textSecondary }]}>{t('collection.loading')}</Text>
       </View>
     )
   }
@@ -27,10 +29,10 @@ export default function CollectionScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[typography.h2, styles.title, { color: theme.text }]}>
-        Word Collection
+        {t('collection.title')}
       </Text>
       <Text style={[typography.bodySmall, styles.subtitle, { color: theme.textSecondary }]}>
-        {words.length} words in your garden
+        {t('collection.wordCount', { count: words.length })}
       </Text>
       <FlatList
         data={words}
@@ -50,7 +52,7 @@ export default function CollectionScreen() {
               <View style={styles.meta}>
                 <LevelBadge interval={item.interval} color={theme.primary} />
                 <Text style={[typography.caption, { color: theme.textSecondary }]}>
-                  Lapses {item.lapses}
+                  {t('collection.lapses', { count: item.lapses })}
                 </Text>
               </View>
             </View>

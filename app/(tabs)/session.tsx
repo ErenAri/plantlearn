@@ -5,6 +5,7 @@ import { Card, Button } from '@/components/ui'
 import { spacing, typography } from '@/constants/Tokens'
 import { getDevNowIso, getDevTodayKey } from '@/dev/clock'
 import { useLocalSearchParams } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { ListeningLesson, type ListeningResult } from '@/components/ListeningLesson'
 import { SpeakingLesson, type SpeakingResult } from '@/components/SpeakingLesson'
 import {
@@ -64,6 +65,7 @@ export default function SessionScreen() {
   const theme = useTheme()
   const params = useLocalSearchParams<{ recovery?: string }>()
   const isRecovery = params.recovery === '1'
+  const { t } = useTranslation()
 
   const [step, setStep] = useState<Step>('warmup')
   const [cards, setCards] = useState<SrsCardRecord[]>([])
@@ -246,7 +248,7 @@ export default function SessionScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
-        <Text style={[typography.body, { color: theme.textSecondary }]}>Loading cards…</Text>
+        <Text style={[typography.body, { color: theme.textSecondary }]}>{t('session.loadingCards')}</Text>
       </View>
     )
   }
@@ -256,7 +258,7 @@ export default function SessionScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Text style={[typography.caption, styles.progress, { color: theme.textSecondary }]}>
-          {isRecovery ? 'Recovery' : 'Warmup'} — {index + 1} / {cards.length}
+          {t('session.progress', { step: isRecovery ? t('session.recovery') : t('session.warmup'), current: index + 1, total: cards.length })}
         </Text>
 
         <Card style={styles.flashcard}>
@@ -271,13 +273,13 @@ export default function SessionScreen() {
         </Card>
 
         {!revealed ? (
-          <Button title="Reveal Answer" onPress={() => setRevealed(true)} />
+          <Button title={t('session.revealAnswer')} onPress={() => setRevealed(true)} />
         ) : (
           <View style={styles.ratingRow}>
-            <Button title="Again" variant="secondary" onPress={() => void handleRate(0)} style={styles.ratingBtn} />
-            <Button title="Hard" variant="secondary" onPress={() => void handleRate(2)} style={styles.ratingBtn} />
-            <Button title="Good" onPress={() => void handleRate(3)} style={styles.ratingBtn} />
-            <Button title="Easy" onPress={() => void handleRate(5)} style={styles.ratingBtn} />
+            <Button title={t('session.again')} variant="secondary" onPress={() => void handleRate(0)} style={styles.ratingBtn} />
+            <Button title={t('session.hard')} variant="secondary" onPress={() => void handleRate(2)} style={styles.ratingBtn} />
+            <Button title={t('session.good')} onPress={() => void handleRate(3)} style={styles.ratingBtn} />
+            <Button title={t('session.easy')} onPress={() => void handleRate(5)} style={styles.ratingBtn} />
           </View>
         )}
       </View>
@@ -289,18 +291,18 @@ export default function SessionScreen() {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
         <Text style={{ fontSize: 48 }}>🎯</Text>
-        <Text style={[typography.h2, { color: theme.text, marginTop: spacing.md }]}>Choose Focus</Text>
+        <Text style={[typography.h2, { color: theme.text, marginTop: spacing.md }]}>{t('session.chooseFocus')}</Text>
         <Text style={[typography.bodySmall, { color: theme.textSecondary, marginTop: spacing.xs, textAlign: 'center' }]}>
-          Pick a skill area for this session
+          {t('session.pickSkill')}
         </Text>
         <Button
-          title="🎧  Listening"
+          title={t('session.listening')}
           onPress={() => setStep('listening')}
           disabled={saving}
           style={styles.focusButton}
         />
         <Button
-          title="🗣  Speaking"
+          title={t('session.speaking')}
           variant="secondary"
           onPress={() => setStep('speaking')}
           disabled={saving}
@@ -328,56 +330,56 @@ export default function SessionScreen() {
     return (
       <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={[styles.center, styles.summaryContent]}>
         <Text style={{ fontSize: 64 }}>🎉</Text>
-        <Text style={[typography.h2, { color: theme.text, marginTop: spacing.md }]}>Session Complete</Text>
+        <Text style={[typography.h2, { color: theme.text, marginTop: spacing.md }]}>{t('session.sessionComplete')}</Text>
 
         <Card style={styles.summaryCard}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>Results</Text>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.results')}</Text>
           <View style={styles.summaryRow}>
-            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>Correct</Text>
+            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{t('session.correct')}</Text>
             <Text style={[typography.body, { color: theme.primary }]}>{summary.correct}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>Wrong</Text>
+            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{t('session.wrong')}</Text>
             <Text style={[typography.body, { color: theme.danger }]}>{summary.wrong}</Text>
           </View>
         </Card>
 
         <Card style={styles.summaryCard}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>XP & Growth</Text>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.xpAndGrowth')}</Text>
           <View style={styles.summaryRow}>
-            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>XP Earned</Text>
+            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{t('session.xpEarned')}</Text>
             <Text style={[typography.body, { color: theme.primary }]}>+{xpGained}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>Total XP</Text>
+            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{t('session.totalXp')}</Text>
             <Text style={[typography.body, { color: theme.text }]}>{summary.newPlant.xp}</Text>
           </View>
           {leveledUp && (
             <Text style={[typography.body, { color: theme.accent, textAlign: 'center', marginTop: spacing.xs }]}>
-              🎯 Level Up! Lv.{summary.oldPlant.level} → Lv.{summary.newPlant.level}
+              {t('session.levelUp', { old: summary.oldPlant.level, new: summary.newPlant.level })}
             </Text>
           )}
           {stageChanged && (
             <Text style={[typography.body, { color: theme.accent, textAlign: 'center', marginTop: spacing.xs }]}>
-              🌱 Stage: {summary.oldPlant.stage} → {summary.newPlant.stage}
+              {t('session.stageChange', { old: t(`stages.${summary.oldPlant.stage}` as any), new: t(`stages.${summary.newPlant.stage}` as any) })}
             </Text>
           )}
         </Card>
 
         <Card style={styles.summaryCard}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>Nutrients Earned</Text>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.nutrientsEarned')}</Text>
           <View style={styles.nutrientsGrid}>
-            <NutrientPill emoji="💧" label="Water" value={r.nutrients.water} theme={theme} />
-            <NutrientPill emoji="☀️" label="Sun" value={r.nutrients.sun} theme={theme} />
-            <NutrientPill emoji="🧪" label="Fertilizer" value={r.nutrients.fertilizer} theme={theme} />
-            <NutrientPill emoji="🌳" label="Roots" value={r.nutrients.roots} theme={theme} />
+            <NutrientPill emoji="💧" label={t('session.nutrientWater')} value={r.nutrients.water} theme={theme} />
+            <NutrientPill emoji="☀️" label={t('session.nutrientSun')} value={r.nutrients.sun} theme={theme} />
+            <NutrientPill emoji="🧪" label={t('session.nutrientFertilizer')} value={r.nutrients.fertilizer} theme={theme} />
+            <NutrientPill emoji="🌳" label={t('session.nutrientRoots')} value={r.nutrients.roots} theme={theme} />
           </View>
         </Card>
 
         <Card style={styles.summaryCard}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>Streak</Text>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.streakLabel')}</Text>
           <View style={styles.summaryRow}>
-            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>Streak</Text>
+            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{t('session.streakLabel')}</Text>
             <Text style={[typography.body, { color: theme.accent }]}>
               🔥 {summary.oldStreak} → {summary.newStreak}
             </Text>
@@ -387,7 +389,7 @@ export default function SessionScreen() {
         {summary.skinUnlocked && (
           <Card style={styles.summaryCard}>
             <Text style={[typography.body, { color: theme.accent, fontWeight: '600', textAlign: 'center' }]}>
-              🎨 New Skin Unlocked!
+              {t('session.newSkinUnlocked')}
             </Text>
             <Text style={[typography.bodySmall, { color: theme.text, textAlign: 'center' }]}>
               {PLANT_SKINS.find(s => s.id === summary.skinUnlocked)?.name ?? summary.skinUnlocked}
@@ -395,7 +397,7 @@ export default function SessionScreen() {
           </Card>
         )}
 
-        <Button title="Practice Again" onPress={restart} style={styles.actionButton} />
+        <Button title={t('session.practiceAgain')} onPress={restart} style={styles.actionButton} />
       </ScrollView>
     )
   }

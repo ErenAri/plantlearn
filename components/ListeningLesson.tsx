@@ -5,6 +5,7 @@ import { useTts } from '@/hooks/useTts'
 import { Card, Button } from '@/components/ui'
 import { spacing, typography, radius } from '@/constants/Tokens'
 import { LISTENING_PROMPTS, type ListeningPrompt } from '@/content/listeningPrompts'
+import { useTranslation } from 'react-i18next'
 import type { Difficulty } from '@/gameplay'
 
 const MAX_QUESTIONS = 5
@@ -56,6 +57,7 @@ function avgDifficulty(prompts: ListeningPrompt[]): Difficulty {
 export function ListeningLesson({ onComplete }: Props) {
   const theme = useTheme()
   const { speak, replay, stop, speaking } = useTts()
+  const { t } = useTranslation()
 
   const [questions] = useState(() => pickQuestions())
   const [index, setIndex] = useState(0)
@@ -134,16 +136,16 @@ export function ListeningLesson({ onComplete }: Props) {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[typography.caption, styles.progress, { color: theme.textSecondary }]}>
-        Listening — {index + 1} / {questions.length}
+        {t('listening.progress', { current: index + 1, total: questions.length })}
       </Text>
 
       <Card style={styles.audioCard}>
         <Text style={{ fontSize: 48, textAlign: 'center' }}>🔊</Text>
         <Text style={[typography.body, { color: theme.textSecondary, textAlign: 'center', marginTop: spacing.sm }]}>
-          {speaking ? 'Playing…' : 'Tap to replay'}
+          {speaking ? t('listening.playing') : t('listening.tapReplay')}
         </Text>
         <Button
-          title="🔁  Replay"
+          title={t('listening.replay')}
           variant="ghost"
           onPress={() => replay(current.audioLang)}
           style={{ marginTop: spacing.sm }}
@@ -186,9 +188,9 @@ export function ListeningLesson({ onComplete }: Props) {
       {showFeedback && (
         <View style={styles.feedbackRow}>
           <Text style={[typography.body, { color: isCorrect ? '#22c55e' : '#ef4444', fontWeight: '600' }]}>
-            {isCorrect ? '✓ Correct!' : '✗ Wrong'}
+            {isCorrect ? t('listening.correctFeedback') : t('listening.wrongFeedback')}
           </Text>
-          <Button title="Next" onPress={handleNext} style={{ marginTop: spacing.sm }} />
+          <Button title={t('listening.next')} onPress={handleNext} style={{ marginTop: spacing.sm }} />
         </View>
       )}
     </View>

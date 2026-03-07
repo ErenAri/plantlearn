@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { Card, Button } from '@/components/ui'
 import { spacing, typography, fontSize } from '@/constants/Tokens'
 import { useRouter, useFocusEffect } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import {
   getActivePlant,
   getStreak,
@@ -43,6 +44,7 @@ function HealthBar({ health, theme }: { health: number; theme: ReturnType<typeof
 export default function HomeScreen() {
   const theme = useTheme()
   const router = useRouter()
+  const { t } = useTranslation()
   const [plant, setPlant] = useState<PlantRecord | null>(null)
   const [streak, setStreak] = useState<StreakRecord | null>(null)
   const [dueCount, setDueCount] = useState(0)
@@ -98,7 +100,7 @@ export default function HomeScreen() {
   const skin = PLANT_SKINS.find(s => s.id === activeSkinId) ?? PLANT_SKINS[0]
   const stage = plant?.stage ?? 'seed'
   const stageEmoji = skin.emojis[stage] ?? skin.emojis.seed
-  const stageLabel = stage.charAt(0).toUpperCase() + stage.slice(1)
+  const stageLabel = t(`stages.${stage}` as any)
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
@@ -112,7 +114,7 @@ export default function HomeScreen() {
 
       <Card style={styles.healthCard}>
         <View style={styles.healthHeader}>
-          <Text style={[typography.bodySmall, { color: theme.text, fontWeight: '600' }]}>Health</Text>
+          <Text style={[typography.bodySmall, { color: theme.text, fontWeight: '600' }]}>{t('home.health')}</Text>
           <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{displayHealth}/{MAX_HEALTH}</Text>
         </View>
         <HealthBar health={displayHealth} theme={theme} />
@@ -122,27 +124,27 @@ export default function HomeScreen() {
         <Card style={styles.miniStat}>
           <Text style={[{ fontSize: fontSize.xl, textAlign: 'center' }]}>🔥</Text>
           <Text style={[typography.h2, { color: theme.accent, textAlign: 'center' }]}>{streak?.currentStreak ?? 0}</Text>
-          <Text style={[typography.caption, { color: theme.textSecondary, textAlign: 'center' }]}>Streak</Text>
+          <Text style={[typography.caption, { color: theme.textSecondary, textAlign: 'center' }]}>{t('home.streak')}</Text>
         </Card>
         <Card style={styles.miniStat}>
           <Text style={[{ fontSize: fontSize.xl, textAlign: 'center' }]}>📚</Text>
           <Text style={[typography.h2, { color: theme.primary, textAlign: 'center' }]}>{dueCount}</Text>
-          <Text style={[typography.caption, { color: theme.textSecondary, textAlign: 'center' }]}>Due</Text>
+          <Text style={[typography.caption, { color: theme.textSecondary, textAlign: 'center' }]}>{t('home.due')}</Text>
         </Card>
         <Card style={styles.miniStat}>
           <Text style={[{ fontSize: fontSize.xl, textAlign: 'center' }]}>💧</Text>
           <Text style={[typography.h2, { color: theme.primary, textAlign: 'center' }]}>{plant?.totalWater ?? 0}</Text>
-          <Text style={[typography.caption, { color: theme.textSecondary, textAlign: 'center' }]}>Water</Text>
+          <Text style={[typography.caption, { color: theme.textSecondary, textAlign: 'center' }]}>{t('home.water')}</Text>
         </Card>
       </View>
 
       <Card style={styles.questCard}>
-        <Text style={[typography.body, { color: theme.text, fontWeight: '600', marginBottom: spacing.sm }]}>Daily Quests</Text>
+        <Text style={[typography.body, { color: theme.text, fontWeight: '600', marginBottom: spacing.sm }]}>{t('home.dailyQuests')}</Text>
         {quests.map(q => (
           <View key={q.id} style={styles.questRow}>
             <Text style={[typography.body, { color: theme.textSecondary }]}>{q.done ? '✅' : '⬜'}</Text>
             <Text style={[typography.bodySmall, { color: q.done ? theme.textSecondary : theme.text, flex: 1 }]}>
-              {q.title}
+              {t(`quests.${q.id}` as any)}
             </Text>
             <Text style={[typography.caption, { color: theme.textSecondary }]}>
               {q.progress}/{q.target}
@@ -153,30 +155,30 @@ export default function HomeScreen() {
 
       {milestone && (
         <Card style={styles.questCard}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600', marginBottom: spacing.sm }]}>Weekly Milestone</Text>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600', marginBottom: spacing.sm }]}>{t('home.weeklyMilestone')}</Text>
           <View style={styles.questRow}>
             <Text style={[typography.body, { color: theme.textSecondary }]}>{milestone.achieved ? '🏆' : '⬜'}</Text>
             <Text style={[typography.bodySmall, { color: milestone.achieved ? theme.textSecondary : theme.text, flex: 1 }]}>
-              {milestone.sessionCount}/{milestone.target} sessions this week
+              {t('home.sessionsThisWeek', { count: milestone.sessionCount, target: milestone.target })}
             </Text>
           </View>
           {milestone.achieved && milestone.skinUnlocked && (
             <Text style={[typography.bodySmall, { color: theme.accent, marginTop: spacing.xs }]}>
-              🎨 Unlocked: {PLANT_SKINS.find(s => s.id === milestone.skinUnlocked)?.name ?? milestone.skinUnlocked}
+              {t('home.unlocked', { name: PLANT_SKINS.find(s => s.id === milestone.skinUnlocked)?.name ?? milestone.skinUnlocked })}
             </Text>
           )}
         </Card>
       )}
 
       <Button
-        title="Start Session"
+        title={t('home.startSession')}
         onPress={() => router.push('/session')}
         style={styles.cta}
       />
 
       {displayHealth < 80 && (
         <Button
-          title="🩹 Recovery Session"
+          title={t('home.recoverySession')}
           variant="secondary"
           onPress={() => router.push('/session?recovery=1' as any)}
           style={styles.recoveryBtn}
@@ -184,9 +186,9 @@ export default function HomeScreen() {
       )}
 
       <View style={styles.nutrientsRow}>
-        <NutrientBadge label="☀️ Sun" value={plant?.totalSun ?? 0} theme={theme} />
-        <NutrientBadge label="🧪 Fert" value={plant?.totalFertilizer ?? 0} theme={theme} />
-        <NutrientBadge label="🌳 Roots" value={plant?.totalRoots ?? 0} theme={theme} />
+        <NutrientBadge label={`☀️ ${t('home.sun')}`} value={plant?.totalSun ?? 0} theme={theme} />
+        <NutrientBadge label={`🧪 ${t('home.fertilizer')}`} value={plant?.totalFertilizer ?? 0} theme={theme} />
+        <NutrientBadge label={`🌳 ${t('home.roots')}`} value={plant?.totalRoots ?? 0} theme={theme} />
       </View>
     </ScrollView>
   )

@@ -5,6 +5,7 @@ import { useStt } from '@/hooks/useStt'
 import { Card, Button } from '@/components/ui'
 import { spacing, typography, radius } from '@/constants/Tokens'
 import { SPEAKING_PROMPTS, type SpeakingPrompt } from '@/content/speakingPrompts'
+import { useTranslation } from 'react-i18next'
 import {
   similarity,
   getFeedback,
@@ -61,9 +62,9 @@ function avgDifficulty(prompts: SpeakingPrompt[]): Difficulty {
 }
 
 const FEEDBACK_LABEL: Record<SpeakingFeedback, string> = {
-  great: '🎉 Great!',
-  good: '👍 Good',
-  try_again: '🔄 Try again',
+  great: 'speaking.great',
+  good: 'speaking.good',
+  try_again: 'speaking.tryAgain',
 }
 
 const FEEDBACK_COLOR: Record<SpeakingFeedback, string> = {
@@ -75,6 +76,7 @@ const FEEDBACK_COLOR: Record<SpeakingFeedback, string> = {
 export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
   const theme = useTheme()
   const stt = useStt()
+  const { t } = useTranslation()
 
   const isDevMode = devTranscript !== null
 
@@ -166,12 +168,12 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[typography.caption, styles.progress, { color: theme.textSecondary }]}>
-        Speaking — {index + 1} / {questions.length}
+        {t('speaking.progress', { current: index + 1, total: questions.length })}
       </Text>
 
       <Card style={styles.promptCard}>
         <Text style={[typography.bodySmall, { color: theme.textSecondary, textAlign: 'center' }]}>
-          Say this in Turkish:
+          {t('speaking.sayInTurkish')}
         </Text>
         <Text style={[typography.h2, { color: theme.text, textAlign: 'center', marginTop: spacing.sm }]}>
           {current.sentence}
@@ -187,16 +189,16 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
             style={[styles.devInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
             value={devInput}
             onChangeText={setDevInput}
-            placeholder="Dev: type transcript"
+            placeholder={t('speaking.devPlaceholder')}
             placeholderTextColor={theme.textSecondary}
           />
-          <Button title="Submit" variant="secondary" onPress={handleDevSubmit} />
+          <Button title={t('speaking.submit')} variant="secondary" onPress={handleDevSubmit} />
         </View>
       )}
 
       {!isDevMode && feedback === null && (
         <Button
-          title={stt.listening ? '🎙️  Listening…' : '🎤  Record'}
+          title={stt.listening ? t('speaking.listeningMic') : t('speaking.record')}
           onPress={() => { void handleRecord() }}
           disabled={stt.listening}
           style={styles.recordBtn}
@@ -204,7 +206,7 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
       )}
 
       {stt.listening && !isDevMode && (
-        <Button title="Stop" variant="secondary" onPress={stt.stop} style={{ marginTop: spacing.sm }} />
+        <Button title={t('speaking.stop')} variant="secondary" onPress={stt.stop} style={{ marginTop: spacing.sm }} />
       )}
 
       {(stt.transcript !== '' && !isDevMode && feedback === null) && (
@@ -216,16 +218,16 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
       {feedback !== null && sim !== null && (
         <View style={styles.feedbackBlock}>
           <Text style={[typography.h3, { color: FEEDBACK_COLOR[feedback], textAlign: 'center' }]}>
-            {FEEDBACK_LABEL[feedback]}
+            {t(FEEDBACK_LABEL[feedback])}
           </Text>
           <Text style={[typography.body, { color: theme.textSecondary, textAlign: 'center', marginTop: spacing.xs }]}>
-            Similarity: {Math.round(sim * 100)}%
+            {t('speaking.similarity', { percent: Math.round(sim * 100) })}
           </Text>
 
           {feedback === 'try_again' && !retryUsed ? (
-            <Button title="Retry" variant="secondary" onPress={handleRetry} style={{ marginTop: spacing.md }} />
+            <Button title={t('speaking.retry')} variant="secondary" onPress={handleRetry} style={{ marginTop: spacing.md }} />
           ) : (
-            <Button title="Next" onPress={handleNext} style={{ marginTop: spacing.md }} />
+            <Button title={t('speaking.next')} onPress={handleNext} style={{ marginTop: spacing.md }} />
           )}
         </View>
       )}

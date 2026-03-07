@@ -6,6 +6,8 @@ import { Card, Button } from '@/components/ui'
 import { spacing, typography } from '@/constants/Tokens'
 import { resetDb, getUnlockedSkins, getSetting, setSetting } from '@/db'
 import { PLANT_SKINS } from '@/gameplay'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import {
   getNotificationSettings,
   saveNotificationSettings,
@@ -18,6 +20,7 @@ const HOUR_OPTIONS = [7, 8, 9, 10, 12, 14, 17, 19, 20, 21]
 export default function SettingsScreen() {
   const theme = useTheme()
   const router = useRouter()
+  const { t } = useTranslation()
   const [resetting, setResetting] = useState(false)
   const [notifEnabled, setNotifEnabled] = useState(false)
   const [notifHour, setNotifHour] = useState(9)
@@ -69,14 +72,37 @@ export default function SettingsScreen() {
     await setSetting('activeSkin', skinId)
   }
 
+  async function changeLanguage(lang: string) {
+    await i18n.changeLanguage(lang)
+    await setSetting('language', lang)
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[typography.h2, styles.title, { color: theme.text }]}>Settings</Text>
+      <Text style={[typography.h2, styles.title, { color: theme.text }]}>{t('settings.title')}</Text>
 
       <Card style={styles.card}>
-        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>Notifications</Text>
+        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('settings.language')}</Text>
+        <View style={styles.hourRow}>
+          <Button
+            title={t('settings.turkish')}
+            variant={i18n.language === 'tr' ? 'primary' : 'ghost'}
+            onPress={() => changeLanguage('tr')}
+            style={styles.hourBtn}
+          />
+          <Button
+            title={t('settings.english')}
+            variant={i18n.language === 'en' ? 'primary' : 'ghost'}
+            onPress={() => changeLanguage('en')}
+            style={styles.hourBtn}
+          />
+        </View>
+      </Card>
+
+      <Card style={styles.card}>
+        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('settings.notifications')}</Text>
         <Button
-          title={notifEnabled ? 'Disable Reminders' : 'Enable Reminders'}
+          title={notifEnabled ? t('settings.disableReminders') : t('settings.enableReminders')}
           variant={notifEnabled ? 'secondary' : 'primary'}
           onPress={toggleNotifications}
           style={styles.button}
@@ -97,7 +123,7 @@ export default function SettingsScreen() {
       </Card>
 
       <Card style={styles.card}>
-        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>Plant Skin</Text>
+        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('settings.plantSkin')}</Text>
         <View style={styles.skinGrid}>
           {PLANT_SKINS.filter(s => unlockedSkins.includes(s.id)).map(s => (
             <Button
@@ -111,18 +137,18 @@ export default function SettingsScreen() {
         </View>
         {unlockedSkins.length < PLANT_SKINS.length && (
           <Text style={[typography.caption, { color: theme.textSecondary, marginTop: spacing.xs }]}>
-            Complete 5 sessions in a week to unlock more skins
+            {t('settings.unlockMoreSkins')}
           </Text>
         )}
       </Card>
 
       <Card style={styles.card}>
-        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>Data</Text>
+        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('settings.data')}</Text>
         <Text style={[typography.bodySmall, { color: theme.textSecondary, marginTop: spacing.xs }]}>
-          Data is stored locally with SQLite.
+          {t('settings.dataStoredLocally')}
         </Text>
         <Button
-          title={resetting ? 'Resetting...' : 'Reset All Data'}
+          title={resetting ? t('settings.resetting') : t('settings.resetAllData')}
           variant="secondary"
           onPress={handleReset}
           disabled={resetting}
@@ -132,16 +158,16 @@ export default function SettingsScreen() {
 
       {__DEV__ && (
         <Card style={styles.card}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>Developer</Text>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('settings.developer')}</Text>
           <Button
-            title="Open DB Debug"
+            title={t('settings.openDbDebug')}
             onPress={() => router.push('./db-debug')}
             style={styles.button}
           />
         </Card>
       )}
 
-      <Text style={[typography.caption, styles.version, { color: theme.textSecondary }]}>PlantLearn v1.0.0</Text>
+      <Text style={[typography.caption, styles.version, { color: theme.textSecondary }]}>{t('settings.version', { version: '1.0.0' })}</Text>
     </View>
   )
 }
