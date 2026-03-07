@@ -1,7 +1,7 @@
-import * as Notifications from 'expo-notifications'
-import { Platform } from 'react-native'
 import { getSetting, setSetting } from '@/db'
 import i18n from '@/i18n'
+import * as Notifications from 'expo-notifications'
+import { Platform } from 'react-native'
 
 const DAILY_ID = 'daily-reminder'
 const STREAK_RISK_ID = 'streak-risk'

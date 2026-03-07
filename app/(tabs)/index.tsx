@@ -1,35 +1,34 @@
-import { useEffect, useState, useCallback } from 'react'
-import { View, Text, StyleSheet, ScrollView } from 'react-native'
-import { useTheme } from '@/hooks/useTheme'
-import { Card, Button } from '@/components/ui'
-import { spacing, typography, fontSize } from '@/constants/Tokens'
-import { useRouter, useFocusEffect } from 'expo-router'
-import { useTranslation } from 'react-i18next'
+import { Button, Card } from '@/components/ui'
+import { fontSize, spacing, typography } from '@/constants/Tokens'
 import {
-  getActivePlant,
-  getStreak,
-  getDueCount,
-  getOrCreateDailyQuests,
-  getWeekSessionCount,
-  getUnlockedSkins,
-  getSkinUnlockedForWeek,
-  getSetting,
-  type PlantRecord,
-  type StreakRecord,
+    getActivePlant,
+    getDueCount,
+    getOrCreateDailyQuests,
+    getSetting,
+    getSkinUnlockedForWeek,
+    getStreak,
+    getWeekSessionCount,
+    type PlantRecord,
+    type StreakRecord
 } from '@/db'
-import {
-  computeDecayOnly,
-  MAX_HEALTH,
-  buildDailyQuestStates,
-  isoWeekBounds,
-  weekKeyFromDate,
-  buildWeeklyMilestone,
-  PLANT_SKINS,
-  type DailyQuestState,
-  type WeeklyMilestoneState,
-} from '@/gameplay'
 import { getDevNowIso, getDevTodayKey } from '@/dev/clock'
+import {
+    buildDailyQuestStates,
+    buildWeeklyMilestone,
+    computeDecayOnly,
+    isoWeekBounds,
+    MAX_HEALTH,
+    PLANT_SKINS,
+    weekKeyFromDate,
+    type DailyQuestState,
+    type WeeklyMilestoneState,
+} from '@/gameplay'
 import { syncNotifications } from '@/hooks/useNotifications'
+import { useTheme } from '@/hooks/useTheme'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
 function HealthBar({ health, theme }: { health: number; theme: ReturnType<typeof useTheme> }) {
   const pct = Math.max(0, Math.min(100, health))

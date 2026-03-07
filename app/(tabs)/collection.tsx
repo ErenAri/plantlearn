@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, FlatList } from 'react-native'
+import { Card } from '@/components/ui'
+import { radius, spacing, typography } from '@/constants/Tokens'
 import { useTheme } from '@/hooks/useTheme'
 import { useWords } from '@/hooks/useWords'
-import { Card } from '@/components/ui'
-import { spacing, typography, radius } from '@/constants/Tokens'
 import { useTranslation } from 'react-i18next'
+import { FlatList, StyleSheet, Text, View } from 'react-native'
 
 function LevelBadge({ interval, color }: { interval: number; color: string }) {
   return (

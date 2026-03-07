@@ -1,18 +1,18 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { View, Text, StyleSheet, TextInput } from 'react-native'
-import { useTheme } from '@/hooks/useTheme'
-import { useStt } from '@/hooks/useStt'
-import { Card, Button } from '@/components/ui'
-import { spacing, typography, radius } from '@/constants/Tokens'
+import { Button, Card } from '@/components/ui'
+import { radius, spacing, typography } from '@/constants/Tokens'
 import { SPEAKING_PROMPTS, type SpeakingPrompt } from '@/content/speakingPrompts'
-import { useTranslation } from 'react-i18next'
-import {
-  similarity,
-  getFeedback,
-  speakingAccuracyFromSimilarities,
-  type SpeakingFeedback,
-} from '@/utils/similarity'
 import type { Difficulty } from '@/gameplay'
+import { useStt } from '@/hooks/useStt'
+import { useTheme } from '@/hooks/useTheme'
+import {
+    getFeedback,
+    similarity,
+    speakingAccuracyFromSimilarities,
+    type SpeakingFeedback,
+} from '@/utils/similarity'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { StyleSheet, Text, TextInput, View } from 'react-native'
 
 const MAX_QUESTIONS = 5
 const TIME_LIMIT_MS = 3 * 60 * 1000

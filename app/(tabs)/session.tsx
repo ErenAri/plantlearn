@@ -1,46 +1,46 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { View, Text, StyleSheet, ScrollView } from 'react-native'
-import { useTheme } from '@/hooks/useTheme'
-import { Card, Button } from '@/components/ui'
-import { spacing, typography } from '@/constants/Tokens'
-import { getDevNowIso, getDevTodayKey } from '@/dev/clock'
-import { useLocalSearchParams } from 'expo-router'
-import { useTranslation } from 'react-i18next'
 import { ListeningLesson, type ListeningResult } from '@/components/ListeningLesson'
 import { SpeakingLesson, type SpeakingResult } from '@/components/SpeakingLesson'
-import {
-  getDueCards,
-  reviewCard,
-  logSession,
-  getActivePlant,
-  upsertPlantProgress,
-  updateStreak,
-  getStreak,
-  incrementQuestProgress,
-  getWeekSessionCount,
-  getUnlockedSkins,
-  unlockSkin,
-  getSkinUnlockedForWeek,
-} from '@/db'
+import { Button, Card } from '@/components/ui'
+import { spacing, typography } from '@/constants/Tokens'
 import type { SrsCardRecord } from '@/db'
 import {
-  computeSessionRewards,
-  applyRewardsToPlant,
-  applyStreakUpdate,
-  isoWeekBounds,
-  weekKeyFromDate,
-  nextUnlockableSkin,
-  RECOVERY_HEALTH_RESTORE,
-  MAX_HEALTH,
-  WEEKLY_MILESTONE_TARGET,
-  PLANT_SKINS,
-  type SkillType,
-  type Difficulty,
-  type SessionRewards,
-  type PlantState,
-  type StreakState,
+    getActivePlant,
+    getDueCards,
+    getSkinUnlockedForWeek,
+    getStreak,
+    getUnlockedSkins,
+    getWeekSessionCount,
+    incrementQuestProgress,
+    logSession,
+    reviewCard,
+    unlockSkin,
+    updateStreak,
+    upsertPlantProgress,
+} from '@/db'
+import { getDevNowIso, getDevTodayKey } from '@/dev/clock'
+import {
+    applyRewardsToPlant,
+    applyStreakUpdate,
+    computeSessionRewards,
+    isoWeekBounds,
+    MAX_HEALTH,
+    nextUnlockableSkin,
+    PLANT_SKINS,
+    RECOVERY_HEALTH_RESTORE,
+    weekKeyFromDate,
+    WEEKLY_MILESTONE_TARGET,
+    type Difficulty,
+    type PlantState,
+    type SessionRewards,
+    type SkillType,
+    type StreakState,
 } from '@/gameplay'
 import { cancelStreakRiskNotification } from '@/hooks/useNotifications'
+import { useTheme } from '@/hooks/useTheme'
+import { useLocalSearchParams } from 'expo-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
 /* ── constants ─────────────────────────────── */
 const MAX_WARMUP_CARDS = 5

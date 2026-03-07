@@ -1,7 +1,7 @@
-import React from 'react';
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Text } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
 

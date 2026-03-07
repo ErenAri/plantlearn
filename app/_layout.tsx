@@ -1,11 +1,11 @@
-import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { useDatabase } from '@/hooks/useDatabase';
 import { getSetting } from '@/db';
+import { useDatabase } from '@/hooks/useDatabase';
 import '@/i18n';
 import i18n from '@/i18n';
 

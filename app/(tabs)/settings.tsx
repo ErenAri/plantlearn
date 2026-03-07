@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
-import { useRouter } from 'expo-router'
-import { useTheme } from '@/hooks/useTheme'
-import { Card, Button } from '@/components/ui'
+import { Button, Card } from '@/components/ui'
 import { spacing, typography } from '@/constants/Tokens'
-import { resetDb, getUnlockedSkins, getSetting, setSetting } from '@/db'
+import { getSetting, getUnlockedSkins, resetDb, setSetting } from '@/db'
 import { PLANT_SKINS } from '@/gameplay'
-import { useTranslation } from 'react-i18next'
-import i18n from '@/i18n'
 import {
-  getNotificationSettings,
-  saveNotificationSettings,
-  syncNotifications,
-  requestNotificationPermissions,
+    getNotificationSettings,
+    requestNotificationPermissions,
+    saveNotificationSettings,
+    syncNotifications,
 } from '@/hooks/useNotifications'
+import { useTheme } from '@/hooks/useTheme'
+import i18n from '@/i18n'
+import { useRouter } from 'expo-router'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { StyleSheet, Text, View } from 'react-native'
 
 const HOUR_OPTIONS = [7, 8, 9, 10, 12, 14, 17, 19, 20, 21]
 

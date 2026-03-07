@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { View, Text, StyleSheet, Pressable } from 'react-native'
+import { Button, Card } from '@/components/ui'
+import { radius, spacing, typography } from '@/constants/Tokens'
+import { LISTENING_PROMPTS, type ListeningPrompt } from '@/content/listeningPrompts'
+import type { Difficulty } from '@/gameplay'
 import { useTheme } from '@/hooks/useTheme'
 import { useTts } from '@/hooks/useTts'
-import { Card, Button } from '@/components/ui'
-import { spacing, typography, radius } from '@/constants/Tokens'
-import { LISTENING_PROMPTS, type ListeningPrompt } from '@/content/listeningPrompts'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Difficulty } from '@/gameplay'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 const MAX_QUESTIONS = 5
 const TIME_LIMIT_MS = 3 * 60 * 1000

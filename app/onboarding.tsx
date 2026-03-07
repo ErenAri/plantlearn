@@ -1,18 +1,18 @@
-import { useState, useRef } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  FlatList,
-  type ViewToken,
-} from 'react-native'
-import { useRouter } from 'expo-router'
-import { useTheme } from '@/hooks/useTheme'
 import { Button } from '@/components/ui'
 import { spacing, typography } from '@/constants/Tokens'
 import { setSetting } from '@/db'
+import { useTheme } from '@/hooks/useTheme'
+import { useRouter } from 'expo-router'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+    Dimensions,
+    FlatList,
+    StyleSheet,
+    Text,
+    View,
+    type ViewToken,
+} from 'react-native'
 
 const { width } = Dimensions.get('window')
 
