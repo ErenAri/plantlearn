@@ -1,7 +1,8 @@
 import { Button, Card } from '@/components/ui'
-import { spacing, typography } from '@/constants/Tokens'
-import { getSetting, getUnlockedSkins, resetDb, setSetting } from '@/db'
-import { PLANT_SKINS } from '@/gameplay'
+import { radius, spacing, typography } from '@/constants/Tokens'
+import { getSetting, getUnlockedAchievements, getUnlockedSkins, resetDb, setSetting, type AchievementRecord } from '@/db'
+import { ACHIEVEMENT_DEFS, PLANT_SKINS } from '@/gameplay'
+import { setHapticsMuted } from '@/hooks/useHaptics'
 import {
     getNotificationSettings,
     requestNotificationPermissions,
@@ -9,13 +10,20 @@ import {
     syncNotifications,
 } from '@/hooks/useNotifications'
 import { useTheme } from '@/hooks/useTheme'
+import { setSoundMuted } from '@/hooks/useAudio'
 import i18n from '@/i18n'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View, ScrollView } from 'react-native'
 
 const HOUR_OPTIONS = [7, 8, 9, 10, 12, 14, 17, 19, 20, 21]
+
+const TIER_COLORS: Record<string, string> = {
+  bronze: '#CD7F32',
+  silver: '#C0C0C0',
+  gold: '#FFD700',
+}
 
 export default function SettingsScreen() {
   const theme = useTheme()
@@ -26,6 +34,9 @@ export default function SettingsScreen() {
   const [notifHour, setNotifHour] = useState(9)
   const [activeSkin, setActiveSkin] = useState('classic')
   const [unlockedSkins, setUnlockedSkins] = useState<string[]>(['classic'])
+  const [soundMuted, setSoundMutedState] = useState(false)
+  const [hapticsMuted, setHapticsMutedState] = useState(false)
+  const [achievements, setAchievements] = useState<AchievementRecord[]>([])
 
   useEffect(() => {
     ;(async () => {
@@ -36,6 +47,12 @@ export default function SettingsScreen() {
       setUnlockedSkins(skins)
       const current = await getSetting('activeSkin')
       setActiveSkin(current ?? 'classic')
+      const sm = await getSetting('soundMuted')
+      setSoundMutedState(sm === '1')
+      const hm = await getSetting('hapticsMuted')
+      setHapticsMutedState(hm === '1')
+      const achs = await getUnlockedAchievements()
+      setAchievements(achs)
     })()
   }, [])
 
@@ -77,8 +94,22 @@ export default function SettingsScreen() {
     await setSetting('language', lang)
   }
 
+  async function toggleSound() {
+    const next = !soundMuted
+    setSoundMutedState(next)
+    setSoundMuted(next)
+    await setSetting('soundMuted', next ? '1' : '0')
+  }
+
+  async function toggleHaptics() {
+    const next = !hapticsMuted
+    setHapticsMutedState(next)
+    setHapticsMuted(next)
+    await setSetting('hapticsMuted', next ? '1' : '0')
+  }
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.scrollContent}>
       <Text style={[typography.h2, styles.title, { color: theme.text }]}>{t('settings.title')}</Text>
 
       <Card style={styles.card}>
@@ -94,6 +125,24 @@ export default function SettingsScreen() {
             title={t('settings.english')}
             variant={i18n.language === 'en' ? 'primary' : 'ghost'}
             onPress={() => changeLanguage('en')}
+            style={styles.hourBtn}
+          />
+        </View>
+      </Card>
+
+      <Card style={styles.card}>
+        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('settings.soundAndHaptics')}</Text>
+        <View style={styles.hourRow}>
+          <Button
+            title={soundMuted ? t('settings.soundOff') : t('settings.soundOn')}
+            variant={soundMuted ? 'ghost' : 'primary'}
+            onPress={toggleSound}
+            style={styles.hourBtn}
+          />
+          <Button
+            title={hapticsMuted ? t('settings.hapticsOff') : t('settings.hapticsOn')}
+            variant={hapticsMuted ? 'ghost' : 'primary'}
+            onPress={toggleHaptics}
             style={styles.hourBtn}
           />
         </View>
@@ -120,6 +169,32 @@ export default function SettingsScreen() {
             ))}
           </View>
         )}
+      </Card>
+
+      <Card style={styles.card}>
+        <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>
+          {t('settings.achievements')} ({achievements.length}/{ACHIEVEMENT_DEFS.length})
+        </Text>
+        <View style={styles.achievementGrid}>
+          {ACHIEVEMENT_DEFS.map(def => {
+            const unlocked = achievements.some(a => a.id === def.id)
+            return (
+              <View key={def.id} style={[styles.achievementTile, { backgroundColor: unlocked ? theme.surface : theme.background, borderColor: unlocked ? TIER_COLORS[def.tier] : theme.border }]}>
+                <Text style={{ fontSize: 28, opacity: unlocked ? 1 : 0.3 }}>{def.icon}</Text>
+                <Text style={[typography.caption, { color: unlocked ? theme.text : theme.textSecondary, textAlign: 'center' }]} numberOfLines={2}>
+                  {t(`achievements.${def.id}.name` as any)}
+                </Text>
+                {unlocked && (
+                  <View style={[styles.tierBadge, { backgroundColor: TIER_COLORS[def.tier] }]}>
+                    <Text style={[typography.caption, { color: '#fff', fontSize: 9 }]}>
+                      {t(`achievements.tierLabel.${def.tier}` as any)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )
+          })}
+        </View>
       </Card>
 
       <Card style={styles.card}>
@@ -168,7 +243,7 @@ export default function SettingsScreen() {
       )}
 
       <Text style={[typography.caption, styles.version, { color: theme.textSecondary }]}>{t('settings.version', { version: '1.0.0' })}</Text>
-    </View>
+    </ScrollView>
   )
 }
 
@@ -177,6 +252,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xl,
+  },
+  scrollContent: {
+    paddingBottom: spacing.xxl,
   },
   title: {
     marginBottom: spacing.md,
@@ -206,5 +284,26 @@ const styles = StyleSheet.create({
   },
   skinBtn: {
     alignSelf: 'flex-start',
+  },
+  achievementGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  achievementTile: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    width: 90,
+    minHeight: 90,
+    gap: spacing.xs,
+  },
+  tierBadge: {
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: 1,
+    borderRadius: radius.sm,
   },
 })

@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
-const TARGET_VERSION = 4
+const TARGET_VERSION = 6
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   const versionRow = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version')
@@ -20,6 +20,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
     DROP TABLE IF EXISTS daily_quests;
     DROP TABLE IF EXISTS unlocked_skins;
     DROP TABLE IF EXISTS user_settings;
+    DROP TABLE IF EXISTS achievements;
   `)
 
   await ensureSchema(db)
@@ -53,6 +54,9 @@ async function ensureSchema(db: SQLiteDatabase): Promise<void> {
       word TEXT NOT NULL,
       meaning TEXT NOT NULL,
       example TEXT,
+      level TEXT NOT NULL DEFAULT 'A1',
+      category TEXT NOT NULL DEFAULT 'general',
+      phonetic TEXT,
       interval INTEGER NOT NULL DEFAULT 1,
       ease REAL NOT NULL DEFAULT 2.5,
       dueDate TEXT NOT NULL,
@@ -66,7 +70,8 @@ async function ensureSchema(db: SQLiteDatabase): Promise<void> {
       durationSec INTEGER NOT NULL,
       accuracy REAL NOT NULL,
       xpEarned INTEGER NOT NULL,
-      nutrientsJson TEXT NOT NULL
+      nutrientsJson TEXT NOT NULL,
+      skillType TEXT NOT NULL DEFAULT 'vocabulary'
     );
 
     CREATE TABLE IF NOT EXISTS daily_quests (
@@ -93,5 +98,11 @@ async function ensureSchema(db: SQLiteDatabase): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_srs_cards_dueDate ON srs_cards(dueDate);
     CREATE INDEX IF NOT EXISTS idx_sessions_date ON sessions(date);
     CREATE INDEX IF NOT EXISTS idx_daily_quests_dateKey ON daily_quests(dateKey);
+
+    CREATE TABLE IF NOT EXISTS achievements (
+      id TEXT PRIMARY KEY,
+      tier TEXT NOT NULL DEFAULT 'bronze',
+      unlockedAt TEXT NOT NULL
+    );
   `)
 }

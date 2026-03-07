@@ -18,11 +18,16 @@ export interface StreakRecord {
   lastSessionDate: string | null
 }
 
+export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2'
+
 export interface SrsCardRecord {
   id: number
   word: string
   meaning: string
   example: string | null
+  level: CefrLevel
+  category: string
+  phonetic: string | null
   interval: number
   ease: number
   dueDate: string | null
@@ -36,6 +41,7 @@ export interface SessionRecord {
   accuracy: number
   xpEarned: number
   nutrientsJson: string
+  skillType?: string
 }
 
 export interface SessionRow extends SessionRecord {
@@ -72,4 +78,12 @@ export interface UnlockedSkinRecord {
 export interface UserSettingRecord {
   key: string
   value: string
+}
+
+export type AchievementTier = 'bronze' | 'silver' | 'gold'
+
+export interface AchievementRecord {
+  id: string
+  tier: AchievementTier
+  unlockedAt: string
 }

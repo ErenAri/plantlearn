@@ -1,6 +1,8 @@
+import { GrammarLesson, type GrammarResult } from '@/components/GrammarLesson'
 import { ListeningLesson, type ListeningResult } from '@/components/ListeningLesson'
+import { ReadingLesson, type ReadingResult } from '@/components/ReadingLesson'
 import { SpeakingLesson, type SpeakingResult } from '@/components/SpeakingLesson'
-import { Button, Card } from '@/components/ui'
+import { AchievementPopup, Button, Card, Confetti, StepIndicator } from '@/components/ui'
 import { spacing, typography } from '@/constants/Tokens'
 import type { SrsCardRecord } from '@/db'
 import {
@@ -21,7 +23,10 @@ import { getDevNowIso, getDevTodayKey } from '@/dev/clock'
 import {
     applyRewardsToPlant,
     applyStreakUpdate,
+    checkAndUnlockAchievements,
     computeSessionRewards,
+    getAchievementDef,
+    getTodayXpMultiplier,
     isoWeekBounds,
     MAX_HEALTH,
     nextUnlockableSkin,
@@ -35,19 +40,31 @@ import {
     type SkillType,
     type StreakState,
 } from '@/gameplay'
+import { useAudio } from '@/hooks/useAudio'
+import { useHaptics } from '@/hooks/useHaptics'
 import { cancelStreakRiskNotification } from '@/hooks/useNotifications'
+import { maybeRequestReview } from '@/hooks/useReviewPrompt'
 import { useTheme } from '@/hooks/useTheme'
 import { useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, {
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withSequence,
+    withSpring,
+    withTiming,
+} from 'react-native-reanimated'
 
 /* ── constants ─────────────────────────────── */
 const MAX_WARMUP_CARDS = 5
 const WARMUP_TIME_LIMIT_MS = 60_000
 const RECOVERY_TIME_LIMIT_MS = 120_000
 
-type Step = 'warmup' | 'focus' | 'listening' | 'speaking' | 'summary'
+type Step = 'warmup' | 'focus' | 'listening' | 'speaking' | 'grammar' | 'reading' | 'summary'
 
 interface SummaryData {
   rewards: SessionRewards
@@ -66,6 +83,8 @@ export default function SessionScreen() {
   const params = useLocalSearchParams<{ recovery?: string }>()
   const isRecovery = params.recovery === '1'
   const { t } = useTranslation()
+  const { play } = useAudio()
+  const haptics = useHaptics()
 
   const [step, setStep] = useState<Step>('warmup')
   const [cards, setCards] = useState<SrsCardRecord[]>([])
@@ -75,7 +94,44 @@ export default function SessionScreen() {
   const [score, setScore] = useState({ correct: 0, wrong: 0 })
   const [saving, setSaving] = useState(false)
   const [summary, setSummary] = useState<SummaryData | null>(null)
+  const [achievementQueue, setAchievementQueue] = useState<string[]>([])
   const startTime = useRef(Date.now())
+
+  // Card flip animation
+  const flipProgress = useSharedValue(0)
+  const swipeX = useSharedValue(0)
+  const cardFlipStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 800 },
+      { rotateY: `${flipProgress.value * 180}deg` },
+      { translateX: swipeX.value },
+      { rotate: `${swipeX.value * 0.05}deg` },
+    ],
+    backfaceVisibility: 'hidden',
+  }))
+  const cardBackStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 800 },
+      { rotateY: `${(flipProgress.value * 180) + 180}deg` },
+      { translateX: swipeX.value },
+      { rotate: `${swipeX.value * 0.05}deg` },
+    ],
+    backfaceVisibility: 'hidden',
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+  }))
+
+  // Summary celebration
+  const celebrationScale = useSharedValue(0)
+  const celebrationStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: celebrationScale.value }],
+    opacity: celebrationScale.value,
+  }))
+
+  // Step indicator
+  const STEP_NAMES = ['warmup', 'focus', 'lesson', 'summary'] as const
+  const stepIndex = step === 'warmup' ? 0 : step === 'focus' ? 1 : (step === 'listening' || step === 'speaking' || step === 'grammar' || step === 'reading') ? 2 : 3
+  const [showConfetti, setShowConfetti] = useState(false)
 
   /* load due cards once on mount */
   const loadCards = useCallback(async () => {
@@ -98,11 +154,20 @@ export default function SessionScreen() {
   async function handleRate(rating: 0 | 2 | 3 | 5) {
     if (!currentCard) return
     await reviewCard(currentCard.id, rating)
+    if (rating >= 3) {
+      haptics.success()
+      play('correct')
+    } else {
+      haptics.warning()
+      play('wrong')
+    }
     setScore(s => ({
       correct: rating >= 3 ? s.correct + 1 : s.correct,
       wrong: rating < 2 ? s.wrong + 1 : s.wrong,
     }))
     setRevealed(false)
+    flipProgress.value = withTiming(0, { duration: 200 })
+    swipeX.value = 0
     const nextIdx = index + 1
     setIndex(nextIdx)
     if (nextIdx >= cards.length || isTimedOut()) {
@@ -136,6 +201,16 @@ export default function SessionScreen() {
     void finishSession('speaking', result.accuracy, result.difficulty, result.durationSec)
   }
 
+  function handleGrammarComplete(result: GrammarResult) {
+    setScore({ correct: result.correct, wrong: result.wrong })
+    void finishSession('grammar', result.accuracy, result.difficulty, result.durationSec)
+  }
+
+  function handleReadingComplete(result: ReadingResult) {
+    setScore({ correct: result.correct, wrong: result.wrong })
+    void finishSession('reading', result.accuracy, result.difficulty, result.durationSec)
+  }
+
   async function finishSession(skillType: SkillType, overrideAccuracy?: number, overrideDifficulty?: Difficulty, overrideDuration?: number) {
     if (saving) return
     setSaving(true)
@@ -150,6 +225,12 @@ export default function SessionScreen() {
       accuracy,
       durationSec,
     })
+
+    // Apply weekend double XP
+    const xpMult = getTodayXpMultiplier()
+    if (xpMult > 1) {
+      rewards.xp = Math.round(rewards.xp * xpMult)
+    }
 
     const now = getDevNowIso()
     const todayKey = getDevTodayKey()
@@ -175,6 +256,7 @@ export default function SessionScreen() {
       accuracy,
       xpEarned: rewards.xp,
       nutrientsJson: JSON.stringify(rewards.nutrients),
+      skillType,
     })
 
     await upsertPlantProgress({
@@ -199,6 +281,12 @@ export default function SessionScreen() {
     }
     if (skillType === 'speaking') {
       await incrementQuestProgress(todayKey, 'speaking_1', 1)
+    }
+    if (skillType === 'grammar') {
+      await incrementQuestProgress(todayKey, 'grammar_1', 1)
+    }
+    if (skillType === 'reading') {
+      await incrementQuestProgress(todayKey, 'reading_1', 1)
     }
 
     let skinUnlocked: string | null = null
@@ -231,6 +319,28 @@ export default function SessionScreen() {
     })
     setSaving(false)
     setStep('summary')
+    play('complete')
+    haptics.success()
+    celebrationScale.value = withSequence(
+      withTiming(0, { duration: 0 }),
+      withSpring(1, { damping: 8, stiffness: 150 }),
+    )
+    // Confetti on perfect score
+    const totalReviewed = score.correct + score.wrong
+    if (totalReviewed > 0 && score.wrong === 0) {
+      setShowConfetti(true)
+    }
+
+    // Check achievements
+    const newAchievements = await checkAndUnlockAchievements()
+    if (newAchievements.length > 0) {
+      setAchievementQueue(newAchievements)
+    }
+
+    // Prompt for review on positive milestones
+    if (newAchievements.length > 0 || newStreakState.currentStreak >= 7) {
+      maybeRequestReview()
+    }
   }
 
   function restart() {
@@ -241,6 +351,11 @@ export default function SessionScreen() {
     setSummary(null)
     setSaving(false)
     startTime.current = Date.now()
+    flipProgress.value = 0
+    swipeX.value = 0
+    celebrationScale.value = 0
+    setShowConfetti(false)
+    setAchievementQueue([])
     loadCards()
   }
 
@@ -257,30 +372,65 @@ export default function SessionScreen() {
   if (step === 'warmup') {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <StepIndicator steps={[...STEP_NAMES]} currentIndex={stepIndex} />
         <Text style={[typography.caption, styles.progress, { color: theme.textSecondary }]}>
           {t('session.progress', { step: isRecovery ? t('session.recovery') : t('session.warmup'), current: index + 1, total: cards.length })}
         </Text>
 
-        <Card style={styles.flashcard}>
-          <Text style={[typography.h1, { color: theme.text, textAlign: 'center' }]}>
-            {currentCard?.word}
-          </Text>
-          {revealed && (
-            <Text style={[typography.h3, { color: theme.primary, textAlign: 'center', marginTop: spacing.md }]}>
-              {currentCard?.meaning}
-            </Text>
-          )}
-        </Card>
+        <View style={{ position: 'relative', minHeight: 200, marginBottom: spacing.lg }}>
+          <GestureDetector gesture={
+            Gesture.Pan()
+              .enabled(revealed)
+              .onUpdate((e) => { swipeX.value = e.translationX })
+              .onEnd((e) => {
+                if (e.translationX < -80) {
+                  swipeX.value = withTiming(-300, { duration: 200 })
+                  runOnJS(handleRate)(0)
+                } else if (e.translationX > 80) {
+                  swipeX.value = withTiming(300, { duration: 200 })
+                  runOnJS(handleRate)(3)
+                } else {
+                  swipeX.value = withSpring(0)
+                }
+              })
+          }>
+          <Animated.View style={[cardFlipStyle]}>
+            <Card style={styles.flashcard}>
+              <Text style={[typography.h1, { color: theme.text, textAlign: 'center' }]}>
+                {currentCard?.word}
+              </Text>
+            </Card>
+          </Animated.View>
+          </GestureDetector>
+          <Animated.View style={[cardBackStyle]}>
+            <Card style={styles.flashcard}>
+              <Text style={[typography.h1, { color: theme.text, textAlign: 'center' }]}>
+                {currentCard?.word}
+              </Text>
+              <Text style={[typography.h3, { color: theme.primary, textAlign: 'center', marginTop: spacing.md }]}>
+                {currentCard?.meaning}
+              </Text>
+            </Card>
+          </Animated.View>
+        </View>
 
         {!revealed ? (
-          <Button title={t('session.revealAnswer')} onPress={() => setRevealed(true)} />
+          <Button title={t('session.revealAnswer')} onPress={() => {
+            setRevealed(true)
+            flipProgress.value = withSpring(1, { damping: 12, stiffness: 200 })
+          }} />
         ) : (
-          <View style={styles.ratingRow}>
+          <>
+            <Text style={[typography.caption, { color: theme.textSecondary, textAlign: 'center', marginBottom: spacing.sm }]}>
+              {t('session.swipeHint')}
+            </Text>
+            <View style={styles.ratingRow}>
             <Button title={t('session.again')} variant="secondary" onPress={() => void handleRate(0)} style={styles.ratingBtn} />
             <Button title={t('session.hard')} variant="secondary" onPress={() => void handleRate(2)} style={styles.ratingBtn} />
             <Button title={t('session.good')} onPress={() => void handleRate(3)} style={styles.ratingBtn} />
             <Button title={t('session.easy')} onPress={() => void handleRate(5)} style={styles.ratingBtn} />
           </View>
+          </>
         )}
       </View>
     )
@@ -290,6 +440,7 @@ export default function SessionScreen() {
   if (step === 'focus') {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
+        <StepIndicator steps={[...STEP_NAMES]} currentIndex={stepIndex} />
         <Text style={{ fontSize: 48 }}>🎯</Text>
         <Text style={[typography.h2, { color: theme.text, marginTop: spacing.md }]}>{t('session.chooseFocus')}</Text>
         <Text style={[typography.bodySmall, { color: theme.textSecondary, marginTop: spacing.xs, textAlign: 'center' }]}>
@@ -308,6 +459,20 @@ export default function SessionScreen() {
           disabled={saving}
           style={styles.focusButton}
         />
+        <Button
+          title={t('session.grammar')}
+          variant="secondary"
+          onPress={() => setStep('grammar')}
+          disabled={saving}
+          style={styles.focusButton}
+        />
+        <Button
+          title={t('session.reading')}
+          variant="secondary"
+          onPress={() => setStep('reading')}
+          disabled={saving}
+          style={styles.focusButton}
+        />
       </View>
     )
   }
@@ -320,6 +485,14 @@ export default function SessionScreen() {
     return <SpeakingLesson onComplete={handleSpeakingComplete} />
   }
 
+  if (step === 'grammar') {
+    return <GrammarLesson onComplete={handleGrammarComplete} />
+  }
+
+  if (step === 'reading') {
+    return <ReadingLesson onComplete={handleReadingComplete} />
+  }
+
   /* ── STEP 3: Summary ─────────────────────── */
   if (step === 'summary' && summary) {
     const r = summary.rewards
@@ -329,7 +502,24 @@ export default function SessionScreen() {
 
     return (
       <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={[styles.center, styles.summaryContent]}>
-        <Text style={{ fontSize: 64 }}>🎉</Text>
+        <Confetti active={showConfetti} />
+        {achievementQueue.length > 0 && (() => {
+          const defId = achievementQueue[0]
+          const def = getAchievementDef(defId)
+          if (!def) return null
+          return (
+            <AchievementPopup
+              achievementId={def.id}
+              icon={def.icon}
+              tier={def.tier}
+              onDismiss={() => setAchievementQueue(q => q.slice(1))}
+            />
+          )
+        })()}
+        <StepIndicator steps={[...STEP_NAMES]} currentIndex={stepIndex} />
+        <Animated.View style={celebrationStyle}>
+          <Text style={{ fontSize: 64 }}>🎉</Text>
+        </Animated.View>
         <Text style={[typography.h2, { color: theme.text, marginTop: spacing.md }]}>{t('session.sessionComplete')}</Text>
 
         <Card style={styles.summaryCard}>

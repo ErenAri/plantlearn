@@ -11,6 +11,8 @@ export const DAILY_QUEST_DEFS: QuestDefinition[] = [
   { id: 'review_5', title: 'Review 5 cards', target: 5 },
   { id: 'listening_1', title: 'Complete a listening set', target: 1 },
   { id: 'speaking_1', title: 'Complete a speaking set', target: 1 },
+  { id: 'grammar_1', title: 'Complete a grammar set', target: 1 },
+  { id: 'reading_1', title: 'Complete a reading set', target: 1 },
 ]
 
 export function buildDailyQuestStates(

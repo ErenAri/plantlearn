@@ -1,7 +1,16 @@
 export { getActivePlant, upsertPlantProgress } from './plantRepository'
 export { getStreak, updateStreak } from './streakRepository'
-export { getDueCards, getDueCount, reviewCard } from './srsRepository'
-export { logSession, listSessions } from './sessionRepository'
+export { getDueCards, getDueCount, reviewCard, getLearnedCardCount } from './srsRepository'
+export {
+  logSession,
+  listSessions,
+  getTotalSessionCount,
+  getSessionCountBySkill,
+  getPerfectSessionCount,
+  getTotalLearningTimeSec,
+  getAverageAccuracyBySkill,
+  getRecentAccuracy,
+} from './sessionRepository'
 export {
   getOrCreateDailyQuests,
   incrementQuestProgress,
@@ -11,3 +20,9 @@ export {
   getSkinUnlockedForWeek,
 } from './questRepository'
 export { getSetting, setSetting } from './settingsRepository'
+export {
+  getUnlockedAchievements,
+  isAchievementUnlocked,
+  unlockAchievement,
+  getAchievementCount,
+} from './achievementRepository'

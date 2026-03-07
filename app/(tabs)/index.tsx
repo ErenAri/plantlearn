@@ -3,10 +3,13 @@ import { fontSize, spacing, typography } from '@/constants/Tokens'
 import {
     getActivePlant,
     getDueCount,
+    getLearnedCardCount,
     getOrCreateDailyQuests,
     getSetting,
     getSkinUnlockedForWeek,
     getStreak,
+    getTotalLearningTimeSec,
+    getTotalSessionCount,
     getWeekSessionCount,
     type PlantRecord,
     type StreakRecord
@@ -16,10 +19,13 @@ import {
     buildDailyQuestStates,
     buildWeeklyMilestone,
     computeDecayOnly,
+    getTodayChallenge,
     isoWeekBounds,
+    isWeekendBonusActive,
     MAX_HEALTH,
     PLANT_SKINS,
     weekKeyFromDate,
+    type DailyChallenge,
     type DailyQuestState,
     type WeeklyMilestoneState,
 } from '@/gameplay'
@@ -29,13 +35,32 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withSpring,
+    withTiming,
+} from 'react-native-reanimated'
 
 function HealthBar({ health, theme }: { health: number; theme: ReturnType<typeof useTheme> }) {
   const pct = Math.max(0, Math.min(100, health))
   const barColor = pct >= 60 ? theme.primary : pct >= 30 ? theme.accent : theme.danger
+  const widthAnim = useSharedValue(0)
+
+  useEffect(() => {
+    widthAnim.value = withTiming(pct, { duration: 600 })
+  }, [pct])
+
+  const animatedBar = useAnimatedStyle(() => ({
+    width: `${widthAnim.value}%`,
+    backgroundColor: barColor,
+  }))
+
   return (
     <View style={styles.healthBarOuter}>
-      <View style={[styles.healthBarInner, { width: `${pct}%`, backgroundColor: barColor }]} />
+      <Animated.View style={[styles.healthBarInner, animatedBar]} />
     </View>
   )
 }
@@ -51,6 +76,17 @@ export default function HomeScreen() {
   const [milestone, setMilestone] = useState<WeeklyMilestoneState | null>(null)
   const [displayHealth, setDisplayHealth] = useState(100)
   const [activeSkinId, setActiveSkinId] = useState('classic')
+  const [totalSessions, setTotalSessions] = useState(0)
+  const [wordsLearned, setWordsLearned] = useState(0)
+  const [totalTimeSec, setTotalTimeSec] = useState(0)
+  const [challenge, setChallenge] = useState<DailyChallenge | null>(null)
+  const [weekendBonus, setWeekendBonus] = useState(false)
+
+  // Plant bounce animation
+  const plantBounce = useSharedValue(1)
+  const plantStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: plantBounce.value }],
+  }))
 
   const load = useCallback(async () => {
     const todayKey = getDevTodayKey()
@@ -89,11 +125,30 @@ export default function HomeScreen() {
     const skinSetting = await getSetting('activeSkin')
     setActiveSkinId(skinSetting ?? 'classic')
 
+    const [sessCount, learnedCount, learnTimeSec] = await Promise.all([
+      getTotalSessionCount(),
+      getLearnedCardCount(),
+      getTotalLearningTimeSec(),
+    ])
+    setTotalSessions(sessCount)
+    setWordsLearned(learnedCount)
+    setTotalTimeSec(learnTimeSec)
+
+    setChallenge(getTodayChallenge())
+    setWeekendBonus(isWeekendBonusActive())
+
     const hasSessionToday = s?.lastSessionDate === todayKey
     syncNotifications(hasSessionToday, s?.currentStreak ?? 0)
   }, [])
 
-  useFocusEffect(useCallback(() => { load() }, [load]))
+  useFocusEffect(useCallback(() => {
+    load()
+    // Bounce plant emoji on focus
+    plantBounce.value = withSequence(
+      withTiming(0.85, { duration: 100 }),
+      withSpring(1, { damping: 6, stiffness: 200 }),
+    )
+  }, [load]))
   useEffect(() => { load() }, [load])
 
   const skin = PLANT_SKINS.find(s => s.id === activeSkinId) ?? PLANT_SKINS[0]
@@ -104,7 +159,9 @@ export default function HomeScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
       <View style={styles.plantViz}>
-        <Text style={styles.plantArt}>{stageEmoji}</Text>
+        <Animated.View style={plantStyle}>
+          <Text style={styles.plantArt}>{stageEmoji}</Text>
+        </Animated.View>
         <Text style={[typography.h3, { color: theme.text }]}>{stageLabel}</Text>
         <Text style={[typography.caption, { color: theme.textSecondary }]}>
           Lv.{plant?.level ?? 1} — {plant?.xp ?? 0} XP
@@ -152,6 +209,28 @@ export default function HomeScreen() {
         ))}
       </Card>
 
+      {weekendBonus && (
+        <Card style={{ ...styles.questCard, borderColor: theme.accent, borderWidth: 1.5 }}>
+          <Text style={[typography.body, { color: theme.accent, fontWeight: '600', textAlign: 'center' }]}>
+            🎉 {t('home.weekendBonus')}
+          </Text>
+        </Card>
+      )}
+
+      {challenge && (
+        <Card style={styles.questCard}>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600', marginBottom: spacing.sm }]}>{t('home.dailyChallenge')}</Text>
+          <View style={styles.questRow}>
+            <Text style={{ fontSize: 24 }}>{challenge.icon}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.bodySmall, { color: theme.text, fontWeight: '600' }]}>{t(`challenges.${challenge.nameKey}` as any)}</Text>
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>{t(`challenges.${challenge.descKey}` as any)}</Text>
+            </View>
+            <Text style={[typography.bodySmall, { color: theme.accent, fontWeight: '600' }]}>+{challenge.bonusXp} XP</Text>
+          </View>
+        </Card>
+      )}
+
       {milestone && (
         <Card style={styles.questCard}>
           <Text style={[typography.body, { color: theme.text, fontWeight: '600', marginBottom: spacing.sm }]}>{t('home.weeklyMilestone')}</Text>
@@ -189,6 +268,27 @@ export default function HomeScreen() {
         <NutrientBadge label={`🧪 ${t('home.fertilizer')}`} value={plant?.totalFertilizer ?? 0} theme={theme} />
         <NutrientBadge label={`🌳 ${t('home.roots')}`} value={plant?.totalRoots ?? 0} theme={theme} />
       </View>
+
+      <Card style={styles.statsCard}>
+        <Text style={[typography.body, { color: theme.text, fontWeight: '600', marginBottom: spacing.sm }]}>{t('home.yourProgress')}</Text>
+        <View style={styles.statsGrid}>
+          <View style={styles.statItem}>
+            <Text style={{ fontSize: 22 }}>📊</Text>
+            <Text style={[typography.h3, { color: theme.primary }]}>{totalSessions}</Text>
+            <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('home.totalSessions')}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={{ fontSize: 22 }}>🔤</Text>
+            <Text style={[typography.h3, { color: theme.primary }]}>{wordsLearned}</Text>
+            <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('home.wordsLearned')}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={{ fontSize: 22 }}>⏱️</Text>
+            <Text style={[typography.h3, { color: theme.primary }]}>{formatTime(totalTimeSec)}</Text>
+            <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('home.totalTime')}</Text>
+          </View>
+        </View>
+      </Card>
     </ScrollView>
   )
 }
@@ -200,6 +300,13 @@ function NutrientBadge({ label, value, theme }: { label: string; value: number; 
       <Text style={[typography.bodySmall, { color: theme.text, fontWeight: '600' }]}>{value}</Text>
     </View>
   )
+}
+
+function formatTime(totalSec: number): string {
+  const hours = Math.floor(totalSec / 3600)
+  const minutes = Math.floor((totalSec % 3600) / 60)
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
 }
 
 const styles = StyleSheet.create({
@@ -267,6 +374,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
   nutrient: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  statsCard: {
+    marginTop: spacing.md,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
     alignItems: 'center',
     gap: spacing.xs,
   },

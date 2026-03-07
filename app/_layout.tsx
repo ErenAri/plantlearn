@@ -1,11 +1,15 @@
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { getSetting } from '@/db';
+import { loadAudioSetting } from '@/hooks/useAudio';
 import { useDatabase } from '@/hooks/useDatabase';
+import { loadHapticSetting } from '@/hooks/useHaptics';
 import '@/i18n';
 import i18n from '@/i18n';
 
@@ -14,6 +18,12 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { ready } = useDatabase();
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
   const [langReady, setLangReady] = useState(false);
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
@@ -26,6 +36,8 @@ export default function RootLayout() {
       }
       setLangReady(true);
 
+      await Promise.all([loadAudioSetting(), loadHapticSetting()]);
+
       const ob = await getSetting('onboardingComplete');
       setOnboarded(ob === '1');
 
@@ -33,7 +45,7 @@ export default function RootLayout() {
     })();
   }, [ready]);
 
-  if (!ready || !langReady || onboarded === null) {
+  if (!ready || !fontsLoaded || !langReady || onboarded === null) {
     return null;
   }
 

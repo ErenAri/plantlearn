@@ -42,7 +42,8 @@
       "expo-router",
       "expo-sqlite",
       "expo-speech-recognition",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

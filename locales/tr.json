@@ -18,7 +18,13 @@
     "sessionsThisWeek": "{{count}}/{{target}} bu haftaki ders",
     "startSession": "Derse Başla",
     "recoverySession": "🩹 Kurtarma Dersi",
-    "unlocked": "🎨 Açılan: {{name}}"
+    "unlocked": "🎨 Açılan: {{name}}",
+    "yourProgress": "İlerlemeniz",
+    "totalSessions": "Dersler",
+    "wordsLearned": "Kelimeler",
+    "totalTime": "Süre",
+    "dailyChallenge": "Günlük Meydan Okuma",
+    "weekendBonus": "Hafta Sonu Çift XP!"
   },
   "session": {
     "loadingCards": "Kartlar yükleniyor…",
@@ -26,6 +32,7 @@
     "recovery": "Kurtarma",
     "progress": "{{step}} — {{current}} / {{total}}",
     "revealAnswer": "Cevabı Göster",
+    "swipeHint": "← Sola kaydır: Tekrar · Sağa kaydır: İyi →",
     "again": "Tekrar",
     "hard": "Zor",
     "good": "İyi",
@@ -34,6 +41,8 @@
     "pickSkill": "Bu ders için bir beceri alanı seçin",
     "listening": "🎧  Dinleme",
     "speaking": "🗣  Konuşma",
+    "grammar": "📝  Dilbilgisi",
+    "reading": "📖  Okuma",
     "sessionComplete": "Ders Tamamlandı",
     "results": "Sonuçlar",
     "correct": "Doğru",
@@ -78,6 +87,20 @@
     "good": "👍 İyi",
     "tryAgain": "🔄 Tekrar deneyin"
   },
+  "grammar": {
+    "title": "Dilbilgisi",
+    "progress": "Dilbilgisi — {{current}} / {{total}}",
+    "correctFeedback": "✓ Doğru!",
+    "wrongFeedback": "✗ Yanlış",
+    "next": "Sonraki"
+  },
+  "reading": {
+    "title": "Okuma",
+    "progress": "Okuma — {{current}} / {{total}}",
+    "correctFeedback": "✓ Doğru!",
+    "wrongFeedback": "✗ Yanlış",
+    "next": "Sonraki"
+  },
   "collection": {
     "title": "Kelime Koleksiyonu",
     "wordCount": "Bahçenizdeki {{count}} kelime",
@@ -101,7 +124,13 @@
     "version": "PlantLearn v{{version}}",
     "language": "Dil",
     "turkish": "Türkçe",
-    "english": "English"
+    "english": "English",
+    "soundAndHaptics": "Ses ve Titreşim",
+    "soundOn": "🔊 Ses Açık",
+    "soundOff": "🔇 Ses Kapalı",
+    "hapticsOn": "📳 Titreşim Açık",
+    "hapticsOff": "📴 Titreşim Kapalı",
+    "achievements": "Başarılar"
   },
   "notifications": {
     "dailyTitle": "🌱 Öğrenme zamanı!",
@@ -112,7 +141,9 @@
   "quests": {
     "review_5": "5 kart tekrar et",
     "listening_1": "Bir dinleme seti tamamla",
-    "speaking_1": "Bir konuşma seti tamamla"
+    "speaking_1": "Bir konuşma seti tamamla",
+    "grammar_1": "Bir dilbilgisi seti tamamla",
+    "reading_1": "Bir okuma seti tamamla"
   },
   "stages": {
     "seed": "Tohum",
@@ -132,5 +163,57 @@
     "getStartedDesc": "İlk dersine başlamaya hazır mısın?",
     "next": "İleri",
     "start": "Başla"
+  },
+  "achievements": {
+    "tierLabel": {
+      "bronze": "Bronz",
+      "silver": "Gümüş",
+      "gold": "Altın"
+    },
+    "first_session": { "name": "İlk Adım", "desc": "İlk dersini tamamla" },
+    "dedicated_3": { "name": "Kararlı", "desc": "3 ders tamamla" },
+    "first_words_10": { "name": "Kelime Toplayıcı", "desc": "10 kelime öğren" },
+    "bookworm_10": { "name": "Kitap Kurdu", "desc": "10 ders tamamla" },
+    "bookworm_50": { "name": "Bilgin", "desc": "50 ders tamamla" },
+    "bookworm_100": { "name": "Usta Bilgin", "desc": "100 ders tamamla" },
+    "streak_7": { "name": "Hafta Savaşçısı", "desc": "7 günlük seri" },
+    "streak_30": { "name": "Ay Ustası", "desc": "30 günlük seri" },
+    "streak_100": { "name": "Seri Efsanesi", "desc": "100 günlük seri" },
+    "polyglot_50": { "name": "Kelime Ustası", "desc": "50 kelime öğren" },
+    "polyglot_100": { "name": "Kelime Uzmanı", "desc": "100 kelime öğren" },
+    "polyglot_250": { "name": "Dilbilimci", "desc": "250 kelime öğren" },
+    "polyglot_500": { "name": "Poliglot", "desc": "500 kelime öğren" },
+    "perfect_1": { "name": "Mükemmeliyetçi", "desc": "Mükemmel puan al" },
+    "perfect_5": { "name": "Kusursuz", "desc": "5 mükemmel puan al" },
+    "perfect_20": { "name": "Dokunulmaz", "desc": "20 mükemmel puan al" },
+    "listener_5": { "name": "İyi Dinleyici", "desc": "5 dinleme dersi tamamla" },
+    "listener_25": { "name": "Keskin Kulak", "desc": "25 dinleme dersi tamamla" },
+    "listener_50": { "name": "Dinleme Ustası", "desc": "50 dinleme dersi tamamla" },
+    "speaker_5": { "name": "Sesini Bul", "desc": "5 konuşma dersi tamamla" },
+    "speaker_25": { "name": "Güvenli Konuşmacı", "desc": "25 konuşma dersi tamamla" },
+    "speaker_50": { "name": "Hatip", "desc": "50 konuşma dersi tamamla" },
+    "grammarian_5": { "name": "Kural Öğrencisi", "desc": "5 dilbilgisi dersi tamamla" },
+    "grammarian_25": { "name": "Dilbilgisi Pro", "desc": "25 dilbilgisi dersi tamamla" },
+    "grammarian_50": { "name": "Dilbilgisi Ustası", "desc": "50 dilbilgisi dersi tamamla" },
+    "reader_5": { "name": "Kitap Kurdu", "desc": "5 okuma dersi tamamla" },
+    "reader_25": { "name": "Okuma Tutkunu", "desc": "25 okuma dersi tamamla" },
+    "reader_50": { "name": "Okuma Şampiyonu", "desc": "50 okuma dersi tamamla" },
+    "garden_architect": { "name": "Bahçe Mimarı", "desc": "Tüm bitki görünümlerini aç" }
+  },
+  "challenges": {
+    "speedRound": "Hız Turu",
+    "speedRoundDesc": "60 saniye içinde 5 soruya cevap ver",
+    "perfectStreak": "Mükemmel Seri",
+    "perfectStreakDesc": "Arka arkaya 5 doğru cevap ver",
+    "vocabBlitz": "Kelime Fırtınası",
+    "vocabBlitzDesc": "Bugün 10 kart tekrar et",
+    "listenFocus": "Dinleme Odağı",
+    "listenFocusDesc": "2 dinleme dersi tamamla",
+    "speakUp": "Sesini Yükselt",
+    "speakUpDesc": "2 konuşma dersi tamamla",
+    "grammarDrill": "Dilbilgisi Antrenmanı",
+    "grammarDrillDesc": "2 dilbilgisi dersi tamamla",
+    "readingMarathon": "Okuma Maratonu",
+    "readingMarathonDesc": "2 okuma dersi tamamla"
   }
 }

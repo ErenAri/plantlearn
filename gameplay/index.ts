@@ -17,6 +17,13 @@ export {
   DAILY_QUEST_DEFS,
 } from './quests'
 
+export {
+  checkAndUnlockAchievements,
+  getAchievementDef,
+  ACHIEVEMENT_DEFS,
+  type AchievementDef,
+} from './achievements'
+
 export type {
   SkillType,
   Difficulty,
@@ -43,3 +50,15 @@ export {
   WEEKLY_MILESTONE_TARGET,
   PLANT_SKINS,
 } from './config'
+
+export {
+  getTodayChallenge,
+  isWeekendBonusActive,
+  getTodayXpMultiplier,
+  type DailyChallenge,
+} from './challenges'
+
+export {
+  getAdaptiveDifficulty,
+  isLevelUnlocked,
+} from './adaptive'

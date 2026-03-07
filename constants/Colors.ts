@@ -31,17 +31,17 @@ export const palette = {
 
 export const light = {
   text: palette.gray900,
-  textSecondary: palette.gray500,
+  textSecondary: palette.gray600,
   background: palette.gray50,
   surface: palette.white,
   border: palette.gray200,
-  primary: palette.green600,
+  primary: palette.green700,
   primaryLight: palette.green100,
   accent: palette.amber500,
   danger: palette.red500,
   tabBar: palette.white,
-  tabBarInactive: palette.gray400,
-  tabBarActive: palette.green600,
+  tabBarInactive: palette.gray500,
+  tabBarActive: palette.green700,
 } as const
 
 export const dark = {

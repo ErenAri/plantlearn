@@ -1,11 +1,10 @@
 import { Button, Card, CountdownTimer } from '@/components/ui'
 import { radius, spacing, typography } from '@/constants/Tokens'
-import { LISTENING_PROMPTS, type ListeningPrompt } from '@/content/listeningPrompts'
+import { GRAMMAR_PROMPTS, type GrammarPrompt } from '@/content/grammarPrompts'
 import { getAdaptiveDifficulty, type Difficulty } from '@/gameplay'
 import { useAudio } from '@/hooks/useAudio'
 import { useHaptics } from '@/hooks/useHaptics'
 import { useTheme } from '@/hooks/useTheme'
-import { useTts } from '@/hooks/useTts'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
@@ -13,7 +12,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 const MAX_QUESTIONS = 5
 const TIME_LIMIT_MS = 3 * 60 * 1000
 
-export interface ListeningResult {
+export interface GrammarResult {
   correct: number
   wrong: number
   total: number
@@ -23,13 +22,13 @@ export interface ListeningResult {
 }
 
 interface Props {
-  onComplete: (result: ListeningResult) => void
+  onComplete: (result: GrammarResult) => void
 }
 
-function pickQuestions(dist: { easy: number; medium: number; hard: number }): ListeningPrompt[] {
-  const easy = LISTENING_PROMPTS.filter(p => p.difficulty === 'easy')
-  const medium = LISTENING_PROMPTS.filter(p => p.difficulty === 'medium')
-  const hard = LISTENING_PROMPTS.filter(p => p.difficulty === 'hard')
+function pickQuestions(dist: { easy: number; medium: number; hard: number }): GrammarPrompt[] {
+  const easy = GRAMMAR_PROMPTS.filter(p => p.difficulty === 'easy')
+  const medium = GRAMMAR_PROMPTS.filter(p => p.difficulty === 'medium')
+  const hard = GRAMMAR_PROMPTS.filter(p => p.difficulty === 'hard')
 
   const pool = [
     ...shuffle(easy).slice(0, dist.easy),
@@ -48,7 +47,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-function avgDifficulty(prompts: ListeningPrompt[]): Difficulty {
+function avgDifficulty(prompts: GrammarPrompt[]): Difficulty {
   const scores = prompts.map(p => p.difficulty === 'easy' ? 1 : p.difficulty === 'medium' ? 2 : 3)
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length
   if (avg < 1.5) return 'easy'
@@ -56,19 +55,18 @@ function avgDifficulty(prompts: ListeningPrompt[]): Difficulty {
   return 'hard'
 }
 
-export function ListeningLesson({ onComplete }: Props) {
+export function GrammarLesson({ onComplete }: Props) {
   const theme = useTheme()
-  const { speak, replay, stop, speaking } = useTts()
   const { t } = useTranslation()
   const { play } = useAudio()
   const haptics = useHaptics()
 
-  const [questions, setQuestions] = useState<ListeningPrompt[]>(() => pickQuestions({ easy: 2, medium: 2, hard: 1 }))
+  const [questions, setQuestions] = useState<GrammarPrompt[]>(() => pickQuestions({ easy: 2, medium: 2, hard: 1 }))
   const [index, setIndex] = useState(0)
 
   // Load adaptive difficulty
   useEffect(() => {
-    getAdaptiveDifficulty('listening').then(dist => {
+    getAdaptiveDifficulty('grammar').then(dist => {
       setQuestions(pickQuestions(dist))
     })
   }, [])
@@ -83,7 +81,6 @@ export function ListeningLesson({ onComplete }: Props) {
   const isCorrect = selected === current?.correctIndex
 
   const finish = useCallback(() => {
-    stop()
     if (timerRef.current) clearTimeout(timerRef.current)
     const durationSec = Math.round((Date.now() - startTime.current) / 1000)
     const total = score.correct + score.wrong
@@ -95,14 +92,13 @@ export function ListeningLesson({ onComplete }: Props) {
       durationSec,
       difficulty: avgDifficulty(questions),
     })
-  }, [stop, score, questions, onComplete])
+  }, [score, questions, onComplete])
 
   useEffect(() => {
     timerRef.current = setTimeout(finish, TIME_LIMIT_MS)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [finish])
 
-  // Countdown tick
   useEffect(() => {
     const tick = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTime.current) / 1000)
@@ -111,12 +107,6 @@ export function ListeningLesson({ onComplete }: Props) {
     }, 1000)
     return () => clearInterval(tick)
   }, [])
-
-  useEffect(() => {
-    if (current) {
-      speak(current.audioText, current.audioLang)
-    }
-  }, [index, current, speak])
 
   function handleSelect(choiceIdx: number) {
     if (showFeedback) return
@@ -145,7 +135,6 @@ export function ListeningLesson({ onComplete }: Props) {
       const c = score.correct
       const w = score.wrong
       const total = c + w
-      stop()
       if (timerRef.current) clearTimeout(timerRef.current)
       onComplete({
         correct: c,
@@ -166,27 +155,22 @@ export function ListeningLesson({ onComplete }: Props) {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.topRow}>
         <Text style={[typography.caption, { color: theme.textSecondary, flex: 1 }]}>
-          {t('listening.progress', { current: index + 1, total: questions.length })}
+          {t('grammar.progress', { current: index + 1, total: questions.length })}
         </Text>
         <CountdownTimer totalSeconds={Math.floor(TIME_LIMIT_MS / 1000)} remainingSeconds={remainingSec} />
       </View>
 
-      <Card style={styles.audioCard}>
-        <Text style={{ fontSize: 48, textAlign: 'center' }}>🔊</Text>
-        <Text style={[typography.body, { color: theme.textSecondary, textAlign: 'center', marginTop: spacing.sm }]}>
-          {speaking ? t('listening.playing') : t('listening.tapReplay')}
+      <Card style={styles.promptCard}>
+        <Text style={[typography.bodySmall, { color: theme.accent, fontWeight: '600', textAlign: 'center' }]}>
+          {current.topic.replace(/_/g, ' ').toUpperCase()}
         </Text>
-        <Button
-          title={t('listening.replay')}
-          variant="ghost"
-          onPress={() => replay(current.audioLang)}
-          style={{ marginTop: spacing.sm }}
-        />
+        <Text style={[typography.bodySmall, { color: theme.textSecondary, textAlign: 'center', marginTop: spacing.xs }]}>
+          {current.instruction}
+        </Text>
+        <Text style={[typography.h3, { color: theme.text, textAlign: 'center', marginTop: spacing.sm }]}>
+          {current.sentence}
+        </Text>
       </Card>
-
-      <Text style={[typography.h3, { color: theme.text, textAlign: 'center', marginBottom: spacing.md }]}>
-        {current.question}
-      </Text>
 
       {current.choices.map((choice, i) => {
         let bg = theme.surface
@@ -220,9 +204,12 @@ export function ListeningLesson({ onComplete }: Props) {
       {showFeedback && (
         <View style={styles.feedbackRow}>
           <Text style={[typography.body, { color: isCorrect ? '#22c55e' : '#ef4444', fontWeight: '600' }]}>
-            {isCorrect ? t('listening.correctFeedback') : t('listening.wrongFeedback')}
+            {isCorrect ? t('grammar.correctFeedback') : t('grammar.wrongFeedback')}
           </Text>
-          <Button title={t('listening.next')} onPress={handleNext} style={{ marginTop: spacing.sm }} />
+          <Text style={[typography.bodySmall, { color: theme.textSecondary, textAlign: 'center', marginTop: spacing.xs }]}>
+            {current.explanation}
+          </Text>
+          <Button title={t('grammar.next')} onPress={handleNext} style={{ marginTop: spacing.sm }} />
         </View>
       )}
     </View>
@@ -240,11 +227,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.lg,
   },
-  progress: {
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  audioCard: {
+  promptCard: {
     alignItems: 'center',
     marginBottom: spacing.lg,
   },

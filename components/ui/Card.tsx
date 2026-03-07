@@ -4,9 +4,10 @@ import { spacing, radius } from '@/constants/Tokens'
 
 interface CardProps extends ViewProps {
   style?: ViewStyle
+  elevated?: boolean
 }
 
-export function Card({ style, children, ...rest }: CardProps) {
+export function Card({ style, children, elevated, ...rest }: CardProps) {
   const theme = useTheme()
 
   return (
@@ -14,6 +15,7 @@ export function Card({ style, children, ...rest }: CardProps) {
       style={[
         styles.card,
         { backgroundColor: theme.surface, borderColor: theme.border },
+        elevated && styles.elevated,
         style,
       ]}
       {...rest}
@@ -29,9 +31,15 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
+  },
+  elevated: {
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
 })

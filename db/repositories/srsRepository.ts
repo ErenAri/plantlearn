@@ -87,3 +87,11 @@ export async function reviewCard(cardId: number, rating: number): Promise<SrsCar
     cardId,
   )
 }
+
+export async function getLearnedCardCount(): Promise<number> {
+  const db = await getDb()
+  const row = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM srs_cards WHERE lastReview IS NOT NULL',
+  )
+  return row?.count ?? 0
+}

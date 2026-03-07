@@ -10,8 +10,15 @@ export {
 	getDueCards,
 	getDueCount,
 	reviewCard,
+	getLearnedCardCount,
 	logSession,
 	listSessions,
+	getTotalSessionCount,
+	getSessionCountBySkill,
+	getPerfectSessionCount,
+	getTotalLearningTimeSec,
+	getAverageAccuracyBySkill,
+	getRecentAccuracy,
 	getOrCreateDailyQuests,
 	incrementQuestProgress,
 	getWeekSessionCount,
@@ -20,6 +27,10 @@ export {
 	getSkinUnlockedForWeek,
 	getSetting,
 	setSetting,
+	getUnlockedAchievements,
+	isAchievementUnlocked,
+	unlockAchievement,
+	getAchievementCount,
 } from './repositories'
 export type {
 	PlantRecord,
@@ -31,5 +42,7 @@ export type {
 	DailyQuestRecord,
 	UnlockedSkinRecord,
 	UserSettingRecord,
+	AchievementTier,
+	AchievementRecord,
 } from './types'
 

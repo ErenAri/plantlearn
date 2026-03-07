@@ -1,7 +1,9 @@
-import { Button, Card } from '@/components/ui'
+import { Button, Card, PulsingMic } from '@/components/ui'
 import { radius, spacing, typography } from '@/constants/Tokens'
 import { SPEAKING_PROMPTS, type SpeakingPrompt } from '@/content/speakingPrompts'
 import type { Difficulty } from '@/gameplay'
+import { useAudio } from '@/hooks/useAudio'
+import { useHaptics } from '@/hooks/useHaptics'
 import { useStt } from '@/hooks/useStt'
 import { useTheme } from '@/hooks/useTheme'
 import {
@@ -77,6 +79,8 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
   const theme = useTheme()
   const stt = useStt()
   const { t } = useTranslation()
+  const { play } = useAudio()
+  const haptics = useHaptics()
 
   const isDevMode = devTranscript !== null
 
@@ -117,6 +121,13 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
     setSim(s)
     const fb = getFeedback(s)
     setFeedback(fb)
+    if (fb === 'great' || fb === 'good') {
+      haptics.success()
+      play('correct')
+    } else {
+      haptics.warning()
+      play('wrong')
+    }
   }
 
   async function handleRecord() {
@@ -197,12 +208,15 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
       )}
 
       {!isDevMode && feedback === null && (
-        <Button
-          title={stt.listening ? t('speaking.listeningMic') : t('speaking.record')}
-          onPress={() => { void handleRecord() }}
-          disabled={stt.listening}
-          style={styles.recordBtn}
-        />
+        <View style={styles.micContainer}>
+          <PulsingMic active={stt.listening} />
+          <Button
+            title={stt.listening ? t('speaking.listeningMic') : t('speaking.record')}
+            onPress={() => { void handleRecord() }}
+            disabled={stt.listening}
+            style={{ marginTop: spacing.md }}
+          />
+        </View>
       )}
 
       {stt.listening && !isDevMode && (
@@ -254,6 +268,10 @@ const styles = StyleSheet.create({
   promptCard: {
     alignItems: 'center',
     marginBottom: spacing.lg,
+  },
+  micContainer: {
+    alignItems: 'center',
+    marginVertical: spacing.md,
   },
   recordBtn: {
     alignSelf: 'center',

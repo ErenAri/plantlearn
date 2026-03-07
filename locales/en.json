@@ -18,7 +18,13 @@
     "sessionsThisWeek": "{{count}}/{{target}} sessions this week",
     "startSession": "Start Session",
     "recoverySession": "🩹 Recovery Session",
-    "unlocked": "🎨 Unlocked: {{name}}"
+    "unlocked": "🎨 Unlocked: {{name}}",
+    "yourProgress": "Your Progress",
+    "totalSessions": "Sessions",
+    "wordsLearned": "Words",
+    "totalTime": "Time",
+    "dailyChallenge": "Daily Challenge",
+    "weekendBonus": "Weekend Double XP!"
   },
   "session": {
     "loadingCards": "Loading cards…",
@@ -26,6 +32,7 @@
     "recovery": "Recovery",
     "progress": "{{step}} — {{current}} / {{total}}",
     "revealAnswer": "Reveal Answer",
+    "swipeHint": "← Swipe left: Again · Swipe right: Good →",
     "again": "Again",
     "hard": "Hard",
     "good": "Good",
@@ -34,6 +41,8 @@
     "pickSkill": "Pick a skill area for this session",
     "listening": "🎧  Listening",
     "speaking": "🗣  Speaking",
+    "grammar": "📝  Grammar",
+    "reading": "📖  Reading",
     "sessionComplete": "Session Complete",
     "results": "Results",
     "correct": "Correct",
@@ -78,6 +87,20 @@
     "good": "👍 Good",
     "tryAgain": "🔄 Try again"
   },
+  "grammar": {
+    "title": "Grammar",
+    "progress": "Grammar — {{current}} / {{total}}",
+    "correctFeedback": "✓ Correct!",
+    "wrongFeedback": "✗ Wrong",
+    "next": "Next"
+  },
+  "reading": {
+    "title": "Reading",
+    "progress": "Reading — {{current}} / {{total}}",
+    "correctFeedback": "✓ Correct!",
+    "wrongFeedback": "✗ Wrong",
+    "next": "Next"
+  },
   "collection": {
     "title": "Word Collection",
     "wordCount": "{{count}} words in your garden",
@@ -101,7 +124,13 @@
     "version": "PlantLearn v{{version}}",
     "language": "Language",
     "turkish": "Türkçe",
-    "english": "English"
+    "english": "English",
+    "soundAndHaptics": "Sound & Haptics",
+    "soundOn": "🔊 Sound On",
+    "soundOff": "🔇 Sound Off",
+    "hapticsOn": "📳 Haptics On",
+    "hapticsOff": "📴 Haptics Off",
+    "achievements": "Achievements"
   },
   "notifications": {
     "dailyTitle": "🌱 Time to learn!",
@@ -112,7 +141,9 @@
   "quests": {
     "review_5": "Review 5 cards",
     "listening_1": "Complete a listening set",
-    "speaking_1": "Complete a speaking set"
+    "speaking_1": "Complete a speaking set",
+    "grammar_1": "Complete a grammar set",
+    "reading_1": "Complete a reading set"
   },
   "stages": {
     "seed": "Seed",
@@ -132,5 +163,57 @@
     "getStartedDesc": "Ready to begin your first lesson?",
     "next": "Next",
     "start": "Start"
+  },
+  "achievements": {
+    "tierLabel": {
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold"
+    },
+    "first_session": { "name": "First Steps", "desc": "Complete your first session" },
+    "dedicated_3": { "name": "Dedicated", "desc": "Complete 3 sessions" },
+    "first_words_10": { "name": "Word Collector", "desc": "Learn 10 words" },
+    "bookworm_10": { "name": "Bookworm", "desc": "Complete 10 sessions" },
+    "bookworm_50": { "name": "Scholar", "desc": "Complete 50 sessions" },
+    "bookworm_100": { "name": "Master Scholar", "desc": "Complete 100 sessions" },
+    "streak_7": { "name": "Week Warrior", "desc": "7-day streak" },
+    "streak_30": { "name": "Month Master", "desc": "30-day streak" },
+    "streak_100": { "name": "Streak Legend", "desc": "100-day streak" },
+    "polyglot_50": { "name": "Vocabulary Builder", "desc": "Learn 50 words" },
+    "polyglot_100": { "name": "Word Expert", "desc": "Learn 100 words" },
+    "polyglot_250": { "name": "Linguist", "desc": "Learn 250 words" },
+    "polyglot_500": { "name": "Polyglot", "desc": "Learn 500 words" },
+    "perfect_1": { "name": "Perfectionist", "desc": "Get a perfect score" },
+    "perfect_5": { "name": "Flawless", "desc": "Get 5 perfect scores" },
+    "perfect_20": { "name": "Untouchable", "desc": "Get 20 perfect scores" },
+    "listener_5": { "name": "Good Listener", "desc": "Complete 5 listening sessions" },
+    "listener_25": { "name": "Sharp Ear", "desc": "Complete 25 listening sessions" },
+    "listener_50": { "name": "Listening Master", "desc": "Complete 50 listening sessions" },
+    "speaker_5": { "name": "Finding Voice", "desc": "Complete 5 speaking sessions" },
+    "speaker_25": { "name": "Confident Speaker", "desc": "Complete 25 speaking sessions" },
+    "speaker_50": { "name": "Orator", "desc": "Complete 50 speaking sessions" },
+    "grammarian_5": { "name": "Rule Learner", "desc": "Complete 5 grammar sessions" },
+    "grammarian_25": { "name": "Grammar Pro", "desc": "Complete 25 grammar sessions" },
+    "grammarian_50": { "name": "Grammar Master", "desc": "Complete 50 grammar sessions" },
+    "reader_5": { "name": "Bookworm", "desc": "Complete 5 reading sessions" },
+    "reader_25": { "name": "Avid Reader", "desc": "Complete 25 reading sessions" },
+    "reader_50": { "name": "Reading Champion", "desc": "Complete 50 reading sessions" },
+    "garden_architect": { "name": "Garden Architect", "desc": "Unlock all plant skins" }
+  },
+  "challenges": {
+    "speedRound": "Speed Round",
+    "speedRoundDesc": "Answer 5 questions in under 60 seconds",
+    "perfectStreak": "Perfect Streak",
+    "perfectStreakDesc": "Get 5 correct answers in a row",
+    "vocabBlitz": "Vocabulary Blitz",
+    "vocabBlitzDesc": "Review 10 flashcards today",
+    "listenFocus": "Listen Focus",
+    "listenFocusDesc": "Complete 2 listening sessions",
+    "speakUp": "Speak Up",
+    "speakUpDesc": "Complete 2 speaking sessions",
+    "grammarDrill": "Grammar Drill",
+    "grammarDrillDesc": "Complete 2 grammar sessions",
+    "readingMarathon": "Reading Marathon",
+    "readingMarathonDesc": "Complete 2 reading sessions"
   }
 }
