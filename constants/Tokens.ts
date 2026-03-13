@@ -8,6 +8,7 @@ export const fontFamily = {
 } as const
 
 export const spacing = {
+  xxs: 2,
   xs: 4,
   sm: 8,
   md: 16,
@@ -18,11 +19,11 @@ export const spacing = {
 
 export const fontSize = {
   xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 20,
-  xl: 24,
-  xxl: 32,
+  sm: 15,
+  md: 17,
+  lg: 21,
+  xl: 28,
+  xxl: 36,
 } as const
 
 export const fontWeight = {
@@ -34,17 +35,24 @@ export const fontWeight = {
 
 export const radius = {
   sm: 8,
-  md: 12,
-  lg: 16,
+  md: 14,
+  lg: 20,
   full: 9999,
 } as const
 
+export const layout = {
+  screenGutter: 20,
+  sectionGap: 18,
+  contentMaxWidth: 720,
+  touchTarget: 48,
+} as const
+
 export const typography = StyleSheet.create({
-  h1: { fontSize: fontSize.xxl, fontFamily: fontFamily.bold, fontWeight: fontWeight.bold, lineHeight: 40 },
-  h2: { fontSize: fontSize.xl, fontFamily: fontFamily.semibold, fontWeight: fontWeight.semibold, lineHeight: 32 },
+  h1: { fontSize: fontSize.xxl, fontFamily: fontFamily.bold, fontWeight: fontWeight.bold, lineHeight: 42 },
+  h2: { fontSize: fontSize.xl, fontFamily: fontFamily.semibold, fontWeight: fontWeight.semibold, lineHeight: 34 },
   h3: { fontSize: fontSize.lg, fontFamily: fontFamily.semibold, fontWeight: fontWeight.semibold, lineHeight: 28 },
-  body: { fontSize: fontSize.md, fontFamily: fontFamily.regular, fontWeight: fontWeight.regular, lineHeight: 24 },
-  bodySmall: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, fontWeight: fontWeight.regular, lineHeight: 20 },
-  caption: { fontSize: fontSize.xs, fontFamily: fontFamily.medium, fontWeight: fontWeight.medium, lineHeight: 16 },
-  button: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, fontWeight: fontWeight.semibold, lineHeight: 24 },
+  body: { fontSize: fontSize.md, fontFamily: fontFamily.regular, fontWeight: fontWeight.regular, lineHeight: 25 },
+  bodySmall: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, fontWeight: fontWeight.regular, lineHeight: 22 },
+  caption: { fontSize: fontSize.xs, fontFamily: fontFamily.medium, fontWeight: fontWeight.medium, lineHeight: 16, letterSpacing: 0.2 },
+  button: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, fontWeight: fontWeight.semibold, lineHeight: 22 },
 })

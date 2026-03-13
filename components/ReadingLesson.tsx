@@ -1,15 +1,20 @@
 import { Button, Card, CountdownTimer } from '@/components/ui'
 import { radius, spacing, typography } from '@/constants/Tokens'
 import { READING_PROMPTS, type ReadingPrompt } from '@/content/readingPrompts'
-import { getAdaptiveDifficulty, type Difficulty } from '@/gameplay'
+import type { Difficulty } from '@/gameplay'
 import { useAudio } from '@/hooks/useAudio'
 import { useHaptics } from '@/hooks/useHaptics'
+import { getAdaptiveDifficulty } from '@/services/adaptive'
 import { useTheme } from '@/hooks/useTheme'
+import {
+  buildTimedAccuracyLessonResult,
+  FIVE_QUESTION_DISTRIBUTION,
+  pickQuestionsByDifficulty,
+} from '@/utils/lessonUtils'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
-const MAX_QUESTIONS = 5
 const TIME_LIMIT_MS = 4 * 60 * 1000
 
 export interface ReadingResult {
@@ -25,49 +30,21 @@ interface Props {
   onComplete: (result: ReadingResult) => void
 }
 
-function pickQuestions(dist: { easy: number; medium: number; hard: number }): ReadingPrompt[] {
-  const easy = READING_PROMPTS.filter(p => p.difficulty === 'easy')
-  const medium = READING_PROMPTS.filter(p => p.difficulty === 'medium')
-  const hard = READING_PROMPTS.filter(p => p.difficulty === 'hard')
-
-  const pool = [
-    ...shuffle(easy).slice(0, dist.easy),
-    ...shuffle(medium).slice(0, dist.medium),
-    ...shuffle(hard).slice(0, dist.hard),
-  ]
-  return shuffle(pool)
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
-function avgDifficulty(prompts: ReadingPrompt[]): Difficulty {
-  const scores = prompts.map(p => p.difficulty === 'easy' ? 1 : p.difficulty === 'medium' ? 2 : 3)
-  const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-  if (avg < 1.5) return 'easy'
-  if (avg < 2.5) return 'medium'
-  return 'hard'
-}
-
 export function ReadingLesson({ onComplete }: Props) {
   const theme = useTheme()
   const { t } = useTranslation()
   const { play } = useAudio()
   const haptics = useHaptics()
 
-  const [questions, setQuestions] = useState<ReadingPrompt[]>(() => pickQuestions({ easy: 2, medium: 2, hard: 1 }))
+  const [questions, setQuestions] = useState<ReadingPrompt[]>(() =>
+    pickQuestionsByDifficulty(READING_PROMPTS, FIVE_QUESTION_DISTRIBUTION),
+  )
   const [index, setIndex] = useState(0)
 
   // Load adaptive difficulty
   useEffect(() => {
     getAdaptiveDifficulty('reading').then(dist => {
-      setQuestions(pickQuestions(dist))
+      setQuestions(pickQuestionsByDifficulty(READING_PROMPTS, dist))
     })
   }, [])
   const [selected, setSelected] = useState<number | null>(null)
@@ -82,16 +59,14 @@ export function ReadingLesson({ onComplete }: Props) {
 
   const finish = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    const durationSec = Math.round((Date.now() - startTime.current) / 1000)
-    const total = score.correct + score.wrong
-    onComplete({
-      correct: score.correct,
-      wrong: score.wrong,
-      total,
-      accuracy: total === 0 ? 0 : score.correct / total,
-      durationSec,
-      difficulty: avgDifficulty(questions),
-    })
+    onComplete(
+      buildTimedAccuracyLessonResult(
+        score.correct,
+        score.wrong,
+        startTime.current,
+        questions,
+      ),
+    )
   }, [score, questions, onComplete])
 
   useEffect(() => {
@@ -131,19 +106,15 @@ export function ReadingLesson({ onComplete }: Props) {
     setShowFeedback(false)
     const nextIdx = index + 1
     if (nextIdx >= questions.length) {
-      const durationSec = Math.round((Date.now() - startTime.current) / 1000)
-      const c = score.correct
-      const w = score.wrong
-      const total = c + w
       if (timerRef.current) clearTimeout(timerRef.current)
-      onComplete({
-        correct: c,
-        wrong: w,
-        total,
-        accuracy: total === 0 ? 0 : c / total,
-        durationSec,
-        difficulty: avgDifficulty(questions),
-      })
+      onComplete(
+        buildTimedAccuracyLessonResult(
+          score.correct,
+          score.wrong,
+          startTime.current,
+          questions,
+        ),
+      )
     } else {
       setIndex(nextIdx)
     }

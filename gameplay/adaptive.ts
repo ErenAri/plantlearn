@@ -1,17 +1,19 @@
-import { getAverageAccuracyBySkill } from '@/db';
-import type { SkillType } from './types';
+export interface AdaptiveQuestionDistribution {
+  easy: number
+  medium: number
+  hard: number
+}
 
 /**
- * Determine recommended difficulty distribution based on user's past accuracy.
+ * Determine recommended difficulty distribution based on a user's past accuracy.
  * Returns the number of easy/medium/hard questions for a 5-question set.
  */
-export async function getAdaptiveDifficulty(skillType: SkillType): Promise<{ easy: number; medium: number; hard: number }> {
-  const avgAccuracy = await getAverageAccuracyBySkill(skillType)
-
-  // High accuracy → harder questions
+export function getAdaptiveDifficultyForAccuracy(
+  avgAccuracy: number,
+): AdaptiveQuestionDistribution {
   if (avgAccuracy >= 0.9) return { easy: 0, medium: 2, hard: 3 }
   if (avgAccuracy >= 0.75) return { easy: 1, medium: 2, hard: 2 }
-  if (avgAccuracy >= 0.6) return { easy: 2, medium: 2, hard: 1 } // default
+  if (avgAccuracy >= 0.6) return { easy: 2, medium: 2, hard: 1 }
   if (avgAccuracy >= 0.4) return { easy: 3, medium: 2, hard: 0 }
   return { easy: 4, medium: 1, hard: 0 }
 }

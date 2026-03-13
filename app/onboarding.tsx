@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui'
 import { spacing, typography } from '@/constants/Tokens'
-import { setSetting } from '@/db'
 import { useTheme } from '@/hooks/useTheme'
 import { useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
@@ -51,8 +50,7 @@ export default function OnboardingScreen() {
 
   async function handleNext() {
     if (isLast) {
-      await setSetting('onboardingComplete', '1')
-      router.replace('/(tabs)')
+      router.replace('/placement?from=onboarding')
     } else {
       flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true })
     }

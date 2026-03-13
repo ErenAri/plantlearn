@@ -26,10 +26,12 @@ const FRESH_PLANT: PlantState = {
   totalWater: 0, totalSun: 0, totalFertilizer: 0, totalRoots: 0,
 }
 
-assert('DAILY_QUEST_DEFS has 3 quests', DAILY_QUEST_DEFS.length, 3)
+assert('DAILY_QUEST_DEFS has 5 quests', DAILY_QUEST_DEFS.length, 5)
 assert('DAILY_QUEST_DEFS[0].id', DAILY_QUEST_DEFS[0].id, 'review_5')
 assert('DAILY_QUEST_DEFS[1].id', DAILY_QUEST_DEFS[1].id, 'listening_1')
 assert('DAILY_QUEST_DEFS[2].id', DAILY_QUEST_DEFS[2].id, 'speaking_1')
+assert('DAILY_QUEST_DEFS[3].id', DAILY_QUEST_DEFS[3].id, 'grammar_1')
+assert('DAILY_QUEST_DEFS[4].id', DAILY_QUEST_DEFS[4].id, 'reading_1')
 
 const noProgress = buildDailyQuestStates({})
 assert('empty progress: all not done', noProgress.every(q => !q.done), true)
@@ -41,7 +43,13 @@ assert('partial review progress', partialProgress[0].progress, 3)
 assert('listening done', partialProgress[1].done, true)
 assert('speaking not done', partialProgress[2].done, false)
 
-const fullProgress = buildDailyQuestStates({ review_5: 5, listening_1: 1, speaking_1: 1 })
+const fullProgress = buildDailyQuestStates({
+  review_5: 5,
+  listening_1: 1,
+  speaking_1: 1,
+  grammar_1: 1,
+  reading_1: 1,
+})
 assert('full: all done', fullProgress.every(q => q.done), true)
 
 const overProgress = buildDailyQuestStates({ review_5: 10 })

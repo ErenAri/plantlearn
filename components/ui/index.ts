@@ -1,8 +1,13 @@
 export { AchievementPopup } from './AchievementPopup'
+export { AppHeader } from './AppHeader'
 export { Button } from './Button'
 export { Card } from './Card'
 export { Confetti } from './Confetti'
 export { CountdownTimer } from './CountdownTimer'
+export { GrowthStrip } from './GrowthStrip'
+export { Icon } from './Icon'
+export { IconButton } from './IconButton'
 export { PulsingMic } from './PulsingMic'
 export { StepIndicator } from './StepIndicator'
+export type { IconName } from './Icon'
 

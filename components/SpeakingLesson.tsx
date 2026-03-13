@@ -7,6 +7,11 @@ import { useHaptics } from '@/hooks/useHaptics'
 import { useStt } from '@/hooks/useStt'
 import { useTheme } from '@/hooks/useTheme'
 import {
+  averageDifficulty,
+  FIVE_QUESTION_DISTRIBUTION,
+  pickQuestionsByDifficulty,
+} from '@/utils/lessonUtils'
+import {
     getFeedback,
     similarity,
     speakingAccuracyFromSimilarities,
@@ -16,7 +21,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, Text, TextInput, View } from 'react-native'
 
-const MAX_QUESTIONS = 5
 const TIME_LIMIT_MS = 3 * 60 * 1000
 
 export interface SpeakingResult {
@@ -31,36 +35,6 @@ export interface SpeakingResult {
 interface Props {
   onComplete: (result: SpeakingResult) => void
   devTranscript?: string | null
-}
-
-function pickQuestions(): SpeakingPrompt[] {
-  const easy = SPEAKING_PROMPTS.filter(p => p.difficulty === 'easy')
-  const medium = SPEAKING_PROMPTS.filter(p => p.difficulty === 'medium')
-  const hard = SPEAKING_PROMPTS.filter(p => p.difficulty === 'hard')
-
-  const pool = [
-    ...shuffle(easy).slice(0, 2),
-    ...shuffle(medium).slice(0, 2),
-    ...shuffle(hard).slice(0, 1),
-  ]
-  return shuffle(pool)
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
-function avgDifficulty(prompts: SpeakingPrompt[]): Difficulty {
-  const scores = prompts.map(p => p.difficulty === 'easy' ? 1 : p.difficulty === 'medium' ? 2 : 3)
-  const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-  if (avg < 1.5) return 'easy'
-  if (avg < 2.5) return 'medium'
-  return 'hard'
 }
 
 const FEEDBACK_LABEL: Record<SpeakingFeedback, string> = {
@@ -84,7 +58,9 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
 
   const isDevMode = devTranscript !== null
 
-  const [questions] = useState(() => pickQuestions())
+  const [questions] = useState(() =>
+    pickQuestionsByDifficulty(SPEAKING_PROMPTS, FIVE_QUESTION_DISTRIBUTION),
+  )
   const [index, setIndex] = useState(0)
   const [sim, setSim] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<SpeakingFeedback | null>(null)
@@ -107,7 +83,7 @@ export function SpeakingLesson({ onComplete, devTranscript = null }: Props) {
       total: finalCorrect + finalWrong,
       accuracy: speakingAccuracyFromSimilarities(finalSims),
       durationSec,
-      difficulty: avgDifficulty(questions),
+      difficulty: averageDifficulty(questions),
     })
   }, [questions, onComplete])
 

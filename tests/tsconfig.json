@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "node16",
+    "moduleResolution": "node16",
+    "target": "es2020",
+    "outDir": "../.tests-dist",
+    "rootDir": "..",
+    "noEmit": false
+  },
+  "include": [
+    "./*.ts",
+    "../db/schema.ts",
+    "../gameplay/**/*.ts",
+    "../services/*Service.ts",
+    "../utils/**/*.ts"
+  ]
+}

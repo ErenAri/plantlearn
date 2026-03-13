@@ -1,5 +1,6 @@
 import { getDb } from './client'
 import { runMigrations } from './migrations'
+import { buildDropCurrentTablesSql } from './schema'
 import { seedIfEmpty } from './seeds'
 
 let initPromise: Promise<void> | null = null
@@ -19,13 +20,7 @@ export async function initializeDb(): Promise<void> {
 export async function resetDb(): Promise<void> {
   const db = await getDb()
   await db.execAsync(`
-    DROP TABLE IF EXISTS plants;
-    DROP TABLE IF EXISTS streaks;
-    DROP TABLE IF EXISTS srs_cards;
-    DROP TABLE IF EXISTS sessions;
-    DROP TABLE IF EXISTS daily_quests;
-    DROP TABLE IF EXISTS unlocked_skins;
-    DROP TABLE IF EXISTS user_settings;
+    ${buildDropCurrentTablesSql()}
     PRAGMA user_version = 0;
   `)
   initPromise = null

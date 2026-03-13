@@ -1,32 +1,4 @@
-const BASE_XP = 20
-const BASE_NUTRIENT = 10
-const DIFFICULTY_MULTIPLIER: Record<string, number> = { easy: 0.8, medium: 1.0, hard: 1.4 }
-const DURATION_BONUS_THRESHOLD_SEC = 120
-const DURATION_BONUS_FACTOR = 0.15
-const SKILL_NUTRIENT_WEIGHTS: Record<string, { water: number; sun: number; fertilizer: number; roots: number }> = {
-  vocabulary: { water: 1.2, sun: 0.8, fertilizer: 0.6, roots: 0.4 },
-  grammar: { water: 0.6, sun: 1.2, fertilizer: 1.0, roots: 0.6 },
-  listening: { water: 0.8, sun: 1.0, fertilizer: 0.4, roots: 1.0 },
-  reading: { water: 0.4, sun: 0.6, fertilizer: 1.2, roots: 1.0 },
-}
-
-function computeSessionRewards(input: { skillType: string; difficulty: string; accuracy: number; durationSec: number }) {
-  const accuracy = Math.min(1, Math.max(0, input.accuracy))
-  const diffMult = DIFFICULTY_MULTIPLIER[input.difficulty] ?? 1
-  const durationBonus = input.durationSec >= DURATION_BONUS_THRESHOLD_SEC ? 1 + DURATION_BONUS_FACTOR : 1
-  const xp = Math.round(BASE_XP * accuracy * diffMult * durationBonus)
-  const weights = SKILL_NUTRIENT_WEIGHTS[input.skillType] ?? SKILL_NUTRIENT_WEIGHTS.vocabulary
-  const nutrientScale = accuracy * diffMult * durationBonus
-  return {
-    xp,
-    nutrients: {
-      water: Math.round(BASE_NUTRIENT * weights.water * nutrientScale),
-      sun: Math.round(BASE_NUTRIENT * weights.sun * nutrientScale),
-      fertilizer: Math.round(BASE_NUTRIENT * weights.fertilizer * nutrientScale),
-      roots: Math.round(BASE_NUTRIENT * weights.roots * nutrientScale),
-    },
-  }
-}
+import { computeSessionRewards } from '../gameplay/engine'
 
 let passed = 0
 let failed = 0

@@ -1,5 +1,5 @@
 import { getDb } from '../client'
-import type { DailyQuestRecord } from '../types'
+import type { DailyQuestRecord, UnlockedSkinRecord } from '../types'
 import { DAILY_QUEST_DEFS } from '@/gameplay/quests'
 
 export async function getOrCreateDailyQuests(dateKey: string): Promise<DailyQuestRecord[]> {
@@ -83,6 +83,15 @@ export async function getUnlockedSkins(): Promise<string[]> {
     ids.unshift('classic')
   }
   return ids
+}
+
+export async function listUnlockedSkinHistory(limit: number): Promise<UnlockedSkinRecord[]> {
+  const db = await getDb()
+  const safeLimit = Math.max(1, Math.floor(limit))
+  return db.getAllAsync<UnlockedSkinRecord>(
+    'SELECT skinId, weekKey, unlockedAt FROM unlocked_skins ORDER BY unlockedAt DESC LIMIT ?',
+    safeLimit,
+  )
 }
 
 export async function unlockSkin(skinId: string, weekKey: string): Promise<void> {

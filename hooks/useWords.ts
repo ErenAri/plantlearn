@@ -1,17 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
-import { getDb } from '@/db'
+import { listLearningCards, type SrsCardRecord } from '@/db'
+import { useCallback, useEffect, useState } from 'react'
 
-export interface LearningCard {
-  id: number
-  word: string
-  meaning: string
-  example: string | null
-  interval: number
-  ease: number
-  dueDate: string
-  lastReview: string | null
-  lapses: number
-}
+export interface LearningCard extends Pick<SrsCardRecord, 'id' | 'word' | 'meaning' | 'example' | 'interval' | 'ease' | 'dueDate' | 'lastReview' | 'lapses' | 'level'> {}
 
 export function useWords() {
   const [words, setWords] = useState<LearningCard[]>([])
@@ -19,11 +9,7 @@ export function useWords() {
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const db = await getDb()
-    const rows = await db.getAllAsync<LearningCard>(
-      'SELECT id, word, meaning, example, interval, ease, dueDate, lastReview, lapses FROM srs_cards ORDER BY id',
-    )
-    setWords(rows)
+    setWords(await listLearningCards())
     setLoading(false)
   }, [])
 

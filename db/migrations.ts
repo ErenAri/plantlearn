@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 
+import { buildDropCurrentTablesSql } from './schema'
+
 const TARGET_VERSION = 6
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {
@@ -13,14 +15,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
 
   await db.execAsync(`
     DROP TABLE IF EXISTS words;
-    DROP TABLE IF EXISTS plants;
-    DROP TABLE IF EXISTS streaks;
-    DROP TABLE IF EXISTS srs_cards;
-    DROP TABLE IF EXISTS sessions;
-    DROP TABLE IF EXISTS daily_quests;
-    DROP TABLE IF EXISTS unlocked_skins;
-    DROP TABLE IF EXISTS user_settings;
-    DROP TABLE IF EXISTS achievements;
+    ${buildDropCurrentTablesSql()}
   `)
 
   await ensureSchema(db)

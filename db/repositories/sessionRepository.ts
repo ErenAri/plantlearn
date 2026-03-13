@@ -28,6 +28,23 @@ export async function listSessions(limit: number): Promise<SessionRow[]> {
   )
 }
 
+export async function listSessionsInRange(
+  startDateKey: string,
+  endDateKey: string,
+): Promise<SessionRow[]> {
+  const db = await getDb()
+
+  return db.getAllAsync<SessionRow>(
+    `SELECT ${SESSION_COLUMNS}
+     FROM sessions
+     WHERE substr(date, 1, 10) >= ?
+       AND substr(date, 1, 10) <= ?
+     ORDER BY date ASC, id ASC`,
+    startDateKey,
+    endDateKey,
+  )
+}
+
 export async function getTotalSessionCount(): Promise<number> {
   const db = await getDb()
   const row = await db.getFirstAsync<{ cnt: number }>('SELECT COUNT(*) as cnt FROM sessions')

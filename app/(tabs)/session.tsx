@@ -4,47 +4,19 @@ import { ReadingLesson, type ReadingResult } from '@/components/ReadingLesson'
 import { SpeakingLesson, type SpeakingResult } from '@/components/SpeakingLesson'
 import { AchievementPopup, Button, Card, Confetti, StepIndicator } from '@/components/ui'
 import { spacing, typography } from '@/constants/Tokens'
-import type { SrsCardRecord } from '@/db'
+import { getDueCards, getSetting, reviewCard, type SrsCardRecord } from '@/db'
 import {
-    getActivePlant,
-    getDueCards,
-    getSkinUnlockedForWeek,
-    getStreak,
-    getUnlockedSkins,
-    getWeekSessionCount,
-    incrementQuestProgress,
-    logSession,
-    reviewCard,
-    unlockSkin,
-    updateStreak,
-    upsertPlantProgress,
-} from '@/db'
-import { getDevNowIso, getDevTodayKey } from '@/dev/clock'
-import {
-    applyRewardsToPlant,
-    applyStreakUpdate,
-    checkAndUnlockAchievements,
-    computeSessionRewards,
     getAchievementDef,
-    getTodayXpMultiplier,
-    isoWeekBounds,
-    MAX_HEALTH,
-    nextUnlockableSkin,
     PLANT_SKINS,
-    RECOVERY_HEALTH_RESTORE,
-    weekKeyFromDate,
-    WEEKLY_MILESTONE_TARGET,
-    type Difficulty,
-    type PlantState,
-    type SessionRewards,
     type SkillType,
-    type StreakState,
 } from '@/gameplay'
 import { useAudio } from '@/hooks/useAudio'
 import { useHaptics } from '@/hooks/useHaptics'
 import { cancelStreakRiskNotification } from '@/hooks/useNotifications'
 import { maybeRequestReview } from '@/hooks/useReviewPrompt'
+import { completeSession, type SessionSummaryData } from '@/services/session'
 import { useTheme } from '@/hooks/useTheme'
+import { buildGrowthProgress } from '@/utils/growth'
 import { useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -65,17 +37,7 @@ const WARMUP_TIME_LIMIT_MS = 60_000
 const RECOVERY_TIME_LIMIT_MS = 120_000
 
 type Step = 'warmup' | 'focus' | 'listening' | 'speaking' | 'grammar' | 'reading' | 'summary'
-
-interface SummaryData {
-  rewards: SessionRewards
-  oldStreak: number
-  newStreak: number
-  oldPlant: PlantState
-  newPlant: PlantState
-  correct: number
-  wrong: number
-  skinUnlocked: string | null
-}
+type LessonResult = ListeningResult | SpeakingResult | GrammarResult | ReadingResult
 
 /* ── main screen ───────────────────────────── */
 export default function SessionScreen() {
@@ -91,10 +53,11 @@ export default function SessionScreen() {
   const [loading, setLoading] = useState(true)
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
-  const [score, setScore] = useState({ correct: 0, wrong: 0 })
+  const [warmupScore, setWarmupScore] = useState({ correct: 0, wrong: 0 })
   const [saving, setSaving] = useState(false)
-  const [summary, setSummary] = useState<SummaryData | null>(null)
+  const [summary, setSummary] = useState<SessionSummaryData | null>(null)
   const [achievementQueue, setAchievementQueue] = useState<string[]>([])
+  const [activeSkinId, setActiveSkinId] = useState('classic')
   const startTime = useRef(Date.now())
 
   // Card flip animation
@@ -143,8 +106,21 @@ export default function SessionScreen() {
 
   useEffect(() => { loadCards() }, [loadCards])
 
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const savedSkin = await getSetting('activeSkin')
+      if (!cancelled && savedSkin) {
+        setActiveSkinId(savedSkin)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const currentCard = cards[index]
-  const warmupDone = index >= cards.length
 
   /* check time limit */
   const warmupLimit = isRecovery ? RECOVERY_TIME_LIMIT_MS : WARMUP_TIME_LIMIT_MS
@@ -161,10 +137,11 @@ export default function SessionScreen() {
       haptics.warning()
       play('wrong')
     }
-    setScore(s => ({
-      correct: rating >= 3 ? s.correct + 1 : s.correct,
-      wrong: rating < 2 ? s.wrong + 1 : s.wrong,
-    }))
+    const nextWarmupScore = {
+      correct: rating >= 3 ? warmupScore.correct + 1 : warmupScore.correct,
+      wrong: rating < 2 ? warmupScore.wrong + 1 : warmupScore.wrong,
+    }
+    setWarmupScore(nextWarmupScore)
     setRevealed(false)
     flipProgress.value = withTiming(0, { duration: 200 })
     swipeX.value = 0
@@ -172,7 +149,13 @@ export default function SessionScreen() {
     setIndex(nextIdx)
     if (nextIdx >= cards.length || isTimedOut()) {
       if (isRecovery) {
-        void finishSession('vocabulary')
+        void persistCompletedSession({
+          skillType: 'vocabulary',
+          correct: nextWarmupScore.correct,
+          wrong: nextWarmupScore.wrong,
+          reviewCount: nextWarmupScore.correct + nextWarmupScore.wrong,
+          durationSec: Math.round((Date.now() - startTime.current) / 1000),
+        })
       } else {
         setStep('focus')
       }
@@ -183,171 +166,99 @@ export default function SessionScreen() {
   useEffect(() => {
     if (!loading && cards.length === 0) {
       if (isRecovery) {
-        void finishSession('vocabulary')
+        void persistCompletedSession({
+          skillType: 'vocabulary',
+          correct: warmupScore.correct,
+          wrong: warmupScore.wrong,
+          reviewCount: warmupScore.correct + warmupScore.wrong,
+          durationSec: Math.round((Date.now() - startTime.current) / 1000),
+        })
       } else {
         setStep('focus')
       }
     }
-  }, [loading, cards.length])
+  }, [cards.length, isRecovery, loading, warmupScore.correct, warmupScore.wrong])
 
   /* ── finish & persist ────────────────────── */
-  function handleListeningComplete(result: ListeningResult) {
-    setScore({ correct: result.correct, wrong: result.wrong })
-    void finishSession('listening', result.accuracy, result.difficulty, result.durationSec)
-  }
-
-  function handleSpeakingComplete(result: SpeakingResult) {
-    setScore({ correct: result.correct, wrong: result.wrong })
-    void finishSession('speaking', result.accuracy, result.difficulty, result.durationSec)
-  }
-
-  function handleGrammarComplete(result: GrammarResult) {
-    setScore({ correct: result.correct, wrong: result.wrong })
-    void finishSession('grammar', result.accuracy, result.difficulty, result.durationSec)
-  }
-
-  function handleReadingComplete(result: ReadingResult) {
-    setScore({ correct: result.correct, wrong: result.wrong })
-    void finishSession('reading', result.accuracy, result.difficulty, result.durationSec)
-  }
-
-  async function finishSession(skillType: SkillType, overrideAccuracy?: number, overrideDifficulty?: Difficulty, overrideDuration?: number) {
+  async function persistCompletedSession(input: {
+    skillType: SkillType
+    correct: number
+    wrong: number
+    reviewCount: number
+    accuracy?: number
+    difficulty?: LessonResult['difficulty']
+    durationSec: number
+  }) {
     if (saving) return
     setSaving(true)
 
-    const reviewed = score.correct + score.wrong
-    const accuracy = overrideAccuracy ?? (reviewed === 0 ? 1 : score.correct / reviewed)
-    const durationSec = overrideDuration ?? Math.round((Date.now() - startTime.current) / 1000)
+    try {
+      const { summary: nextSummary, newAchievements } = await completeSession({
+        ...input,
+        isRecovery,
+      })
 
-    const rewards = computeSessionRewards({
-      skillType,
-      difficulty: overrideDifficulty ?? 'medium',
-      accuracy,
-      durationSec,
-    })
+      await cancelStreakRiskNotification()
 
-    // Apply weekend double XP
-    const xpMult = getTodayXpMultiplier()
-    if (xpMult > 1) {
-      rewards.xp = Math.round(rewards.xp * xpMult)
-    }
+      setSummary(nextSummary)
+      setStep('summary')
+      play('complete')
+      haptics.success()
+      celebrationScale.value = withSequence(
+        withTiming(0, { duration: 0 }),
+        withSpring(1, { damping: 8, stiffness: 150 }),
+      )
 
-    const now = getDevNowIso()
-    const todayKey = getDevTodayKey()
-    const streakRow = await getStreak()
-    const oldStreakState: StreakState = { currentStreak: streakRow.currentStreak, lastSessionDate: streakRow.lastSessionDate }
-
-    const plantRow = await getActivePlant()
-    const oldPlant: PlantState = plantRow
-      ? { level: plantRow.level, xp: plantRow.xp, health: plantRow.health, stage: plantRow.stage, totalWater: plantRow.totalWater, totalSun: plantRow.totalSun, totalFertilizer: plantRow.totalFertilizer, totalRoots: plantRow.totalRoots }
-      : { level: 1, xp: 0, health: 100, stage: 'seed', totalWater: 0, totalSun: 0, totalFertilizer: 0, totalRoots: 0 }
-
-    let newPlant = applyRewardsToPlant(oldPlant, rewards, oldStreakState, now)
-
-    if (isRecovery) {
-      newPlant = { ...newPlant, health: Math.min(MAX_HEALTH, newPlant.health + RECOVERY_HEALTH_RESTORE) }
-    }
-
-    const newStreakState = applyStreakUpdate(oldStreakState, now)
-
-    await logSession({
-      date: now,
-      durationSec,
-      accuracy,
-      xpEarned: rewards.xp,
-      nutrientsJson: JSON.stringify(rewards.nutrients),
-      skillType,
-    })
-
-    await upsertPlantProgress({
-      xp: newPlant.xp,
-      level: newPlant.level,
-      health: newPlant.health,
-      stage: newPlant.stage,
-      totalWater: newPlant.totalWater,
-      totalSun: newPlant.totalSun,
-      totalFertilizer: newPlant.totalFertilizer,
-      totalRoots: newPlant.totalRoots,
-    })
-
-    await updateStreak(now)
-
-    const cardsReviewed = score.correct + score.wrong
-    if (cardsReviewed > 0) {
-      await incrementQuestProgress(todayKey, 'review_5', cardsReviewed)
-    }
-    if (skillType === 'listening') {
-      await incrementQuestProgress(todayKey, 'listening_1', 1)
-    }
-    if (skillType === 'speaking') {
-      await incrementQuestProgress(todayKey, 'speaking_1', 1)
-    }
-    if (skillType === 'grammar') {
-      await incrementQuestProgress(todayKey, 'grammar_1', 1)
-    }
-    if (skillType === 'reading') {
-      await incrementQuestProgress(todayKey, 'reading_1', 1)
-    }
-
-    let skinUnlocked: string | null = null
-    const { monday, sunday } = isoWeekBounds(todayKey)
-    const weekKey = weekKeyFromDate(todayKey)
-    const weekSessions = await getWeekSessionCount(monday, sunday)
-    if (weekSessions >= WEEKLY_MILESTONE_TARGET) {
-      const existing = await getSkinUnlockedForWeek(weekKey)
-      if (!existing) {
-        const unlockedIds = await getUnlockedSkins()
-        const next = nextUnlockableSkin(unlockedIds)
-        if (next) {
-          await unlockSkin(next, weekKey)
-          skinUnlocked = next
-        }
+      const totalReviewed = nextSummary.correct + nextSummary.wrong
+      if (totalReviewed > 0 && nextSummary.wrong === 0) {
+        setShowConfetti(true)
       }
+
+      if (newAchievements.length > 0) {
+        setAchievementQueue(newAchievements)
+      }
+
+      if (newAchievements.length > 0 || nextSummary.newStreak >= 7) {
+        void maybeRequestReview()
+      }
+    } finally {
+      setSaving(false)
     }
+  }
 
-    cancelStreakRiskNotification()
+  function handleListeningComplete(result: ListeningResult) {
+    void persistLessonResult('listening', result)
+  }
 
-    setSummary({
-      rewards,
-      oldStreak: oldStreakState.currentStreak,
-      newStreak: newStreakState.currentStreak,
-      oldPlant,
-      newPlant,
-      correct: score.correct,
-      wrong: score.wrong,
-      skinUnlocked,
+  function handleSpeakingComplete(result: SpeakingResult) {
+    void persistLessonResult('speaking', result)
+  }
+
+  function handleGrammarComplete(result: GrammarResult) {
+    void persistLessonResult('grammar', result)
+  }
+
+  function handleReadingComplete(result: ReadingResult) {
+    void persistLessonResult('reading', result)
+  }
+
+  async function persistLessonResult(skillType: SkillType, result: LessonResult) {
+    await persistCompletedSession({
+      skillType,
+      correct: result.correct,
+      wrong: result.wrong,
+      reviewCount: warmupScore.correct + warmupScore.wrong,
+      accuracy: result.accuracy,
+      difficulty: result.difficulty,
+      durationSec: result.durationSec,
     })
-    setSaving(false)
-    setStep('summary')
-    play('complete')
-    haptics.success()
-    celebrationScale.value = withSequence(
-      withTiming(0, { duration: 0 }),
-      withSpring(1, { damping: 8, stiffness: 150 }),
-    )
-    // Confetti on perfect score
-    const totalReviewed = score.correct + score.wrong
-    if (totalReviewed > 0 && score.wrong === 0) {
-      setShowConfetti(true)
-    }
-
-    // Check achievements
-    const newAchievements = await checkAndUnlockAchievements()
-    if (newAchievements.length > 0) {
-      setAchievementQueue(newAchievements)
-    }
-
-    // Prompt for review on positive milestones
-    if (newAchievements.length > 0 || newStreakState.currentStreak >= 7) {
-      maybeRequestReview()
-    }
   }
 
   function restart() {
     setStep('warmup')
     setIndex(0)
     setRevealed(false)
-    setScore({ correct: 0, wrong: 0 })
+    setWarmupScore({ correct: 0, wrong: 0 })
     setSummary(null)
     setSaving(false)
     startTime.current = Date.now()
@@ -497,8 +408,26 @@ export default function SessionScreen() {
   if (step === 'summary' && summary) {
     const r = summary.rewards
     const xpGained = summary.newPlant.xp - summary.oldPlant.xp
+    const healthDelta = summary.newPlant.health - summary.oldPlant.health
     const leveledUp = summary.newPlant.level > summary.oldPlant.level
     const stageChanged = summary.newPlant.stage !== summary.oldPlant.stage
+    const oldGrowth = buildGrowthProgress(summary.oldPlant.xp)
+    const newGrowth = buildGrowthProgress(summary.newPlant.xp)
+    const activeSkin = PLANT_SKINS.find((skin) => skin.id === activeSkinId) ?? PLANT_SKINS[0]
+    const oldStageEmoji = activeSkin.emojis[summary.oldPlant.stage] ?? activeSkin.emojis.seed
+    const newStageEmoji = activeSkin.emojis[summary.newPlant.stage] ?? activeSkin.emojis.seed
+    const nextStageLabel = newGrowth.nextStage
+      ? t(`stages.${newGrowth.nextStage}` as any)
+      : t('session.fullyGrown')
+    const summaryNarrative = stageChanged
+      ? t('session.summaryNarrativeStage', {
+          stage: t(`stages.${summary.newPlant.stage}` as any),
+          xp: xpGained,
+        })
+      : t('session.summaryNarrativeProgress', {
+          xp: xpGained,
+          percent: Math.round(newGrowth.progressPercent),
+        })
 
     return (
       <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={[styles.center, styles.summaryContent]}>
@@ -521,6 +450,9 @@ export default function SessionScreen() {
           <Text style={{ fontSize: 64 }}>🎉</Text>
         </Animated.View>
         <Text style={[typography.h2, { color: theme.text, marginTop: spacing.md }]}>{t('session.sessionComplete')}</Text>
+        <Text style={[typography.body, styles.summaryLead, { color: theme.textSecondary }]}>
+          {summaryNarrative}
+        </Text>
 
         <Card style={styles.summaryCard}>
           <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.results')}</Text>
@@ -535,15 +467,44 @@ export default function SessionScreen() {
         </Card>
 
         <Card style={styles.summaryCard}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.xpAndGrowth')}</Text>
-          <View style={styles.summaryRow}>
-            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{t('session.xpEarned')}</Text>
-            <Text style={[typography.body, { color: theme.primary }]}>+{xpGained}</Text>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.growthSnapshot')}</Text>
+          <View style={styles.growthCompareRow}>
+            <View style={[styles.growthCompareCard, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('session.before')}</Text>
+              <Text style={styles.compareEmoji}>{oldStageEmoji}</Text>
+              <Text style={[typography.bodySmall, { color: theme.text }]}>{t(`stages.${summary.oldPlant.stage}` as any)}</Text>
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>{summary.oldPlant.xp} XP</Text>
+            </View>
+            <View style={[styles.growthCompareCard, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('session.after')}</Text>
+              <Text style={styles.compareEmoji}>{newStageEmoji}</Text>
+              <Text style={[typography.bodySmall, { color: theme.text }]}>{t(`stages.${summary.newPlant.stage}` as any)}</Text>
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>{summary.newPlant.xp} XP</Text>
+            </View>
           </View>
           <View style={styles.summaryRow}>
             <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{t('session.totalXp')}</Text>
             <Text style={[typography.body, { color: theme.text }]}>{summary.newPlant.xp}</Text>
           </View>
+          <View style={[styles.progressTrack, { backgroundColor: theme.surfaceAlt }]}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  backgroundColor: theme.primary,
+                  width: `${Math.max(0, Math.min(100, newGrowth.progressPercent))}%`,
+                },
+              ]}
+            />
+          </View>
+          <Text style={[typography.caption, { color: theme.textSecondary }]}>
+            {newGrowth.isMaxStage
+              ? t('session.fullyGrown')
+              : t('session.xpToStageSummary', {
+                  xp: newGrowth.xpToNextStage,
+                  stage: nextStageLabel,
+                })}
+          </Text>
           {leveledUp && (
             <Text style={[typography.body, { color: theme.accent, textAlign: 'center', marginTop: spacing.xs }]}>
               {t('session.levelUp', { old: summary.oldPlant.level, new: summary.newPlant.level })}
@@ -557,23 +518,24 @@ export default function SessionScreen() {
         </Card>
 
         <Card style={styles.summaryCard}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.nutrientsEarned')}</Text>
-          <View style={styles.nutrientsGrid}>
-            <NutrientPill emoji="💧" label={t('session.nutrientWater')} value={r.nutrients.water} theme={theme} />
-            <NutrientPill emoji="☀️" label={t('session.nutrientSun')} value={r.nutrients.sun} theme={theme} />
-            <NutrientPill emoji="🧪" label={t('session.nutrientFertilizer')} value={r.nutrients.fertilizer} theme={theme} />
-            <NutrientPill emoji="🌳" label={t('session.nutrientRoots')} value={r.nutrients.roots} theme={theme} />
-          </View>
-        </Card>
-
-        <Card style={styles.summaryCard}>
-          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.streakLabel')}</Text>
-          <View style={styles.summaryRow}>
-            <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{t('session.streakLabel')}</Text>
-            <Text style={[typography.body, { color: theme.accent }]}>
-              🔥 {summary.oldStreak} → {summary.newStreak}
-            </Text>
-          </View>
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('session.whatChanged')}</Text>
+          <DeltaRow label={t('session.xpEarned')} theme={theme} value={`+${xpGained}`} valueColor={theme.primary} />
+          <DeltaRow
+            label={t('session.healthDelta')}
+            theme={theme}
+            value={`${healthDelta >= 0 ? '+' : ''}${healthDelta}`}
+            valueColor={healthDelta >= 0 ? theme.success : theme.danger}
+          />
+          <DeltaRow
+            label={t('session.growthProgress')}
+            theme={theme}
+            value={`${Math.round(oldGrowth.progressPercent)}% → ${Math.round(newGrowth.progressPercent)}%`}
+          />
+          <DeltaRow label={t('session.nutrientWater')} theme={theme} value={`+${r.nutrients.water}`} valueColor={theme.primary} />
+          <DeltaRow label={t('session.nutrientSun')} theme={theme} value={`+${r.nutrients.sun}`} valueColor={theme.primary} />
+          <DeltaRow label={t('session.nutrientFertilizer')} theme={theme} value={`+${r.nutrients.fertilizer}`} valueColor={theme.primary} />
+          <DeltaRow label={t('session.nutrientRoots')} theme={theme} value={`+${r.nutrients.roots}`} valueColor={theme.primary} />
+          <DeltaRow label={t('session.streakLabel')} theme={theme} value={`${summary.oldStreak} → ${summary.newStreak}`} valueColor={theme.accent} />
         </Card>
 
         {summary.skinUnlocked && (
@@ -595,11 +557,21 @@ export default function SessionScreen() {
   return null
 }
 
-function NutrientPill({ emoji, label, value, theme }: { emoji: string; label: string; value: number; theme: ReturnType<typeof useTheme> }) {
+function DeltaRow({
+  label,
+  value,
+  theme,
+  valueColor,
+}: {
+  label: string
+  value: string
+  theme: ReturnType<typeof useTheme>
+  valueColor?: string
+}) {
   return (
-    <View style={styles.nutrientPill}>
-      <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{emoji} {label}</Text>
-      <Text style={[typography.body, { color: theme.primary, fontWeight: '600' }]}>+{value}</Text>
+    <View style={styles.summaryRow}>
+      <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>{label}</Text>
+      <Text style={[typography.body, { color: valueColor ?? theme.text, fontWeight: '600' }]}>{value}</Text>
     </View>
   )
 }
@@ -616,6 +588,10 @@ const styles = StyleSheet.create({
   },
   summaryContent: {
     paddingBottom: spacing.xxl,
+  },
+  summaryLead: {
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   progress: {
     textAlign: 'center',
@@ -648,15 +624,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  nutrientsGrid: {
+  growthCompareRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  nutrientPill: {
+  growthCompareCard: {
+    flex: 1,
     alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
     gap: spacing.xs,
-    minWidth: 70,
+  },
+  compareEmoji: {
+    fontSize: 36,
+  },
+  progressTrack: {
+    height: 10,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
   },
   actionButton: {
     marginTop: spacing.md,

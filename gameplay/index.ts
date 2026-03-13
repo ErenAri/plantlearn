@@ -11,8 +11,12 @@ export {
 } from './quests'
 
 export {
-    ACHIEVEMENT_DEFS, checkAndUnlockAchievements,
-    getAchievementDef, type AchievementDef
+    ACHIEVEMENT_DEFS,
+    getAchievementDef,
+    getNewlyUnlockedAchievementIds,
+    type AchievementDef,
+    type AchievementSnapshot,
+    type AchievementTier,
 } from './achievements'
 
 export type {
@@ -32,7 +36,8 @@ export {
 } from './challenges'
 
 export {
-    getAdaptiveDifficulty,
+    getAdaptiveDifficultyForAccuracy,
+    type AdaptiveQuestionDistribution,
     isLevelUnlocked
 } from './adaptive'
 
