@@ -1,4 +1,5 @@
 import { AppHeader, Button, Card, GrowthStrip, Icon, IconButton } from '@/components/ui'
+import { PlantHeroScene } from '@/components/plant/PlantHeroScene'
 import { fontSize, layout, spacing, typography } from '@/constants/Tokens'
 import {
   getActivePlant,
@@ -331,9 +332,7 @@ export default function HomeScreen() {
     )
   }, [load, plantBounce]))
 
-  const skin = PLANT_SKINS.find((item) => item.id === activeSkinId) ?? PLANT_SKINS[0]
   const stage = plant?.stage ?? 'seed'
-  const stageEmoji = skin.emojis[stage] ?? skin.emojis.seed
   const stageLabel = t(`stages.${stage}` as any)
   const growthProgress = buildGrowthProgress(plant?.xp ?? 0)
   const nextStageLabel = growthProgress.nextStage
@@ -371,11 +370,21 @@ export default function HomeScreen() {
           <View style={styles.heroTop}>
             <Animated.View
               style={[
-                styles.plantOrb,
+                styles.plantScene,
                 plantStyle,
-                { backgroundColor: theme.surface, borderColor: theme.border },
               ]}>
-              <Text style={styles.plantArt}>{stageEmoji}</Text>
+              <PlantHeroScene
+                health={displayHealth}
+                height={154}
+                skinId={activeSkinId}
+                speciesId={plant?.speciesId ?? 'starter-fern'}
+                stage={stage}
+                totalFertilizer={plant?.totalFertilizer ?? 0}
+                totalRoots={plant?.totalRoots ?? 0}
+                totalSun={plant?.totalSun ?? 0}
+                totalWater={plant?.totalWater ?? 0}
+                width={140}
+              />
             </Animated.View>
             <View style={styles.heroCopy}>
               <View style={styles.statusRow}>
@@ -646,16 +655,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  plantOrb: {
-    alignItems: 'center',
-    borderWidth: 1,
-    height: 88,
-    justifyContent: 'center',
-    width: 88,
-    borderRadius: 30,
-  },
-  plantArt: {
-    fontSize: 52,
+  plantScene: {
+    flexShrink: 0,
   },
   heroCopy: {
     flex: 1,

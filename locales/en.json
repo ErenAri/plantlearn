@@ -261,6 +261,7 @@
     "healthMeter": "Plant health",
     "growthOverview": "Growth overview",
     "growthOverviewHint": "Current stage, pace, and what is next.",
+    "growthProcessHint": "Follow the apple tree from seed to bloom.",
     "currentStage": "Current stage",
     "nextStage": "Next stage",
     "xpToNextStage": "{{xp}} XP to {{stage}}",
@@ -307,6 +308,11 @@
       "recovery": "Needs recovery",
       "thriving": "Thriving this week",
       "steady": "Growing steadily"
+    },
+    "visualState": {
+      "healthy": "Healthy trees stay upright with a full green canopy, firm branches, and moist soil.",
+      "watch": "Moderate stress softens the posture, thins the canopy, and dulls the color.",
+      "unhealthy": "Low health should look clearly stressed: dry soil, gaps in the canopy, browner leaves, and dropped leaves or fruit."
     },
     "risks": {
       "high": "Recovery needed",
