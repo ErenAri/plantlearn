@@ -1,6 +1,7 @@
 import { AppHeader, Button, Card, GrowthStrip, Icon, IconButton } from '@/components/ui'
+import { PlantHeroScene } from '@/components/plant/PlantHeroScene'
 import { layout, spacing, typography } from '@/constants/Tokens'
-import { MAX_HEALTH, PLANT_SKINS } from '@/gameplay'
+import { MAX_HEALTH, PLANT_SKINS, STAGE_ORDER, XP_PER_STAGE } from '@/gameplay'
 import { useTheme } from '@/hooks/useTheme'
 import { getPlantDashboardData } from '@/services/plant'
 import type {
@@ -190,6 +191,164 @@ function TimelineRow({
   )
 }
 
+function GrowthStageCard({
+  activeSkinId,
+  currentStage,
+  health,
+  speciesId,
+  stage,
+  theme,
+}: {
+  activeSkinId: string
+  currentStage: string
+  health: number
+  speciesId: string
+  stage: string
+  theme: ReturnType<typeof useTheme>
+}) {
+  const { t } = useTranslation()
+  const stageIndex = STAGE_ORDER.indexOf(stage as typeof STAGE_ORDER[number])
+  const currentIndex = STAGE_ORDER.indexOf(currentStage as typeof STAGE_ORDER[number])
+  const isCurrent = stage === currentStage
+  const isReached = stageIndex <= currentIndex
+  const statusIcon = isCurrent ? 'activity' : isReached ? 'check-circle' : 'clock'
+  const sceneHealth = isCurrent ? health : isReached ? 92 : 100
+  const signals = getStageVisualSignals(stage as typeof STAGE_ORDER[number])
+
+  return (
+    <View
+      style={[
+        styles.growthStageCard,
+        {
+          backgroundColor: isCurrent ? theme.primaryLight : theme.surfaceAlt,
+          borderColor: isCurrent ? theme.primary : theme.border,
+          opacity: isReached ? 1 : 0.72,
+        },
+      ]}
+    >
+      <View style={styles.growthStageHeader}>
+        <Text style={[typography.bodySmall, { color: theme.text }]}>{t(`stages.${stage}` as any)}</Text>
+        <Icon color={isCurrent ? theme.primary : theme.textSecondary} name={statusIcon} size={14} />
+      </View>
+      <PlantHeroScene
+        health={sceneHealth}
+        height={156}
+        skinId={activeSkinId}
+        speciesId={speciesId}
+        stage={stage}
+        totalFertilizer={stageIndex * 28}
+        totalRoots={stageIndex * 26}
+        totalSun={stageIndex * 24}
+        totalWater={stageIndex * 26}
+      />
+      <View style={styles.growthStageSignals}>
+        <StageSignalDots
+          activeColor="#7f5b3e"
+          isCurrent={isCurrent}
+          kind="root"
+          level={signals.root}
+          theme={theme}
+        />
+        <StageSignalDots
+          activeColor="#725137"
+          isCurrent={isCurrent}
+          kind="trunk"
+          level={signals.trunk}
+          theme={theme}
+        />
+        <StageSignalDots
+          activeColor="#5f9251"
+          isCurrent={isCurrent}
+          kind="canopy"
+          level={signals.canopy}
+          theme={theme}
+        />
+        <StageSignalDots
+          activeColor="#cb5a4b"
+          isCurrent={isCurrent}
+          kind="fruit"
+          level={signals.fruit}
+          theme={theme}
+        />
+      </View>
+      <View style={styles.growthStageFooter}>
+        <Text style={[typography.caption, { color: theme.textSecondary }]}>
+          {XP_PER_STAGE[stage]} XP
+        </Text>
+        {isCurrent ? (
+          <Text style={[typography.caption, { color: theme.primary }]}>{health}/{MAX_HEALTH}</Text>
+        ) : null}
+      </View>
+    </View>
+  )
+}
+
+function getStageVisualSignals(stage: typeof STAGE_ORDER[number]) {
+  if (stage === 'seed') {
+    return { root: 1, trunk: 0, canopy: 0, fruit: 0 }
+  }
+
+  if (stage === 'sprout') {
+    return { root: 2, trunk: 1, canopy: 1, fruit: 0 }
+  }
+
+  if (stage === 'sapling') {
+    return { root: 3, trunk: 2, canopy: 2, fruit: 0 }
+  }
+
+  if (stage === 'mature') {
+    return { root: 4, trunk: 3, canopy: 4, fruit: 1 }
+  }
+
+  return { root: 4, trunk: 4, canopy: 4, fruit: 4 }
+}
+
+function StageSignalDots({
+  activeColor,
+  isCurrent,
+  kind,
+  level,
+  theme,
+}: {
+  activeColor: string
+  isCurrent: boolean
+  kind: 'root' | 'trunk' | 'canopy' | 'fruit'
+  level: number
+  theme: ReturnType<typeof useTheme>
+}) {
+  return (
+    <View style={styles.stageSignalMeter}>
+      {Array.from({ length: 4 }).map((_, index) => {
+        const active = index < level
+        return (
+          <View
+            key={`${kind}-${index}`}
+            style={[
+              styles.stageSignalDot,
+              kind === 'root' ? styles.stageSignalRoot : null,
+              kind === 'trunk' ? styles.stageSignalTrunk : null,
+              kind === 'canopy' ? styles.stageSignalCanopy : null,
+              kind === 'fruit' ? styles.stageSignalFruit : null,
+              kind === 'root'
+                ? { transform: [{ rotate: `${index % 2 === 0 ? -16 : 14}deg` }] }
+                : null,
+              {
+                backgroundColor: active
+                  ? activeColor
+                  : theme.surface,
+                borderColor: active
+                  ? activeColor
+                  : theme.border,
+                opacity: active ? (isCurrent ? 1 : 0.9) : 0.75,
+              },
+            ]}
+          />
+        )
+      })}
+    </View>
+  )
+}
+
 function getTimelineTitle(item: PlantTimelineItem, t: ReturnType<typeof useTranslation>['t']): string {
   if (item.kind === 'stage') return t('plant.timeline.stageTitle')
   if (item.kind === 'skin') return t('plant.timeline.skinTitle')
@@ -256,8 +415,6 @@ export default function PlantScreen() {
     )
   }
 
-  const skin = PLANT_SKINS.find((item) => item.id === dashboard.activeSkinId) ?? PLANT_SKINS[0]
-  const stageEmoji = skin.emojis[dashboard.plant.stage] ?? skin.emojis.seed
   const stageLabel = t(`stages.${dashboard.plant.stage}` as any)
   const nextStageLabel = dashboard.growth.nextStage
     ? t(`stages.${dashboard.growth.nextStage}` as any)
@@ -265,6 +422,11 @@ export default function PlantScreen() {
   const moodLabel = t(`plant.moods.${dashboard.insights.mood}` as any)
   const riskColor = getRiskColor(dashboard.insights.risk, theme)
   const recommendation = dashboard.insights.recommendation
+  const healthVisualHint = dashboard.plant.displayHealth < 80
+    ? t('plant.visualState.unhealthy')
+    : dashboard.plant.displayHealth < 92
+      ? t('plant.visualState.watch')
+      : t('plant.visualState.healthy')
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.background }]}>
@@ -284,14 +446,27 @@ export default function PlantScreen() {
 
         <Card elevated style={styles.heroCard} tone="accent">
           <View style={styles.heroTop}>
-            <View style={[styles.plantOrb, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Text style={styles.plantArt}>{stageEmoji}</Text>
-            </View>
+            <PlantHeroScene
+              health={dashboard.plant.displayHealth}
+              height={250}
+              skinId={dashboard.activeSkinId}
+              speciesId={dashboard.plant.speciesId}
+              stage={dashboard.plant.stage}
+              style={styles.heroScene}
+              totalFertilizer={dashboard.plant.totalFertilizer}
+              totalRoots={dashboard.plant.totalRoots}
+              totalSun={dashboard.plant.totalSun}
+              totalWater={dashboard.plant.totalWater}
+              width="100%"
+            />
             <View style={styles.heroCopy}>
               <Text style={[typography.caption, { color: theme.textSecondary }]}>{stageLabel}</Text>
               <Text style={[typography.h2, { color: theme.text }]}>{moodLabel}</Text>
               <Text style={[typography.bodySmall, { color: theme.textSecondary }]}>
                 {t('plant.skinLine', { skin: dashboard.activeSkinName })}
+              </Text>
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>
+                {healthVisualHint}
               </Text>
             </View>
           </View>
@@ -346,6 +521,29 @@ export default function PlantScreen() {
               <Text style={[typography.caption, { color: theme.textSecondary }]}>{nextStageLabel}</Text>
             </View>
           </View>
+
+          <Text style={[typography.caption, { color: theme.textSecondary }]}>
+            {t('plant.growthProcessHint')}
+          </Text>
+
+          <ScrollView
+            contentContainerStyle={styles.growthProcessRow}
+            horizontal
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator={false}
+          >
+            {STAGE_ORDER.map((stage) => (
+              <GrowthStageCard
+                activeSkinId={dashboard.activeSkinId}
+                currentStage={dashboard.plant.stage}
+                health={dashboard.plant.displayHealth}
+                key={stage}
+                speciesId={dashboard.plant.speciesId}
+                stage={stage}
+                theme={theme}
+              />
+            ))}
+          </ScrollView>
 
           <View style={styles.summaryPillGrid}>
             <SummaryPill
@@ -597,23 +795,13 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   heroTop: {
-    alignItems: 'center',
-    flexDirection: 'row',
     gap: spacing.md,
   },
-  plantOrb: {
-    alignItems: 'center',
-    borderRadius: 32,
-    borderWidth: 1,
-    height: 96,
-    justifyContent: 'center',
-    width: 96,
-  },
-  plantArt: {
-    fontSize: 56,
+  heroScene: {
+    alignSelf: 'center',
+    maxWidth: 320,
   },
   heroCopy: {
-    flex: 1,
     gap: spacing.xs,
   },
   healthHeader: {
@@ -670,6 +858,62 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs + 2,
+  },
+  growthProcessRow: {
+    gap: spacing.sm,
+    paddingRight: spacing.xs,
+  },
+  growthStageCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.sm,
+    width: 184,
+  },
+  growthStageSignals: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+    paddingHorizontal: 2,
+  },
+  stageSignalMeter: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    minHeight: 18,
+  },
+  stageSignalDot: {
+    borderWidth: 1,
+  },
+  stageSignalRoot: {
+    borderRadius: 999,
+    height: 12,
+    width: 3,
+  },
+  stageSignalTrunk: {
+    borderRadius: 3,
+    height: 12,
+    width: 5,
+  },
+  stageSignalCanopy: {
+    borderRadius: 999,
+    height: 9,
+    width: 9,
+  },
+  stageSignalFruit: {
+    borderRadius: 999,
+    height: 7,
+    width: 7,
+  },
+  growthStageHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  growthStageFooter: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   summaryPillGrid: {
     flexDirection: 'row',

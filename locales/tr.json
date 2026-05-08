@@ -261,6 +261,7 @@
     "healthMeter": "Bitki sağlığı",
     "growthOverview": "Büyüme görünümü",
     "growthOverviewHint": "Mevcut aşama, tempo ve sonraki hedef.",
+    "growthProcessHint": "Elma agacinin tohumdan cicege gecisini izle.",
     "currentStage": "Mevcut aşama",
     "nextStage": "Sonraki aşama",
     "xpToNextStage": "{{stage}} için {{xp}} XP",
@@ -307,6 +308,11 @@
       "recovery": "Toparlanma gerekiyor",
       "thriving": "Bu hafta cok iyi gidiyor",
       "steady": "Dengeli buyuyor"
+    },
+    "visualState": {
+      "healthy": "Saglikli agac dik durur; tac dolu, dallar saglam ve toprak nemli gorunur.",
+      "watch": "Orta duzey stres durusu yumusatir, taci seyreltir ve renkleri soldurur.",
+      "unhealthy": "Dusuk saglik belirgin stres gostermeli: kuru toprak, tac icinde bosluklar, daha kahverengi yapraklar ve yere dusen yaprak ya da meyveler."
     },
     "risks": {
       "high": "Toparlanma gerekli",

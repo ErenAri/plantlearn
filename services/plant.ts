@@ -30,6 +30,7 @@ import {
 } from './plantStatusService'
 
 const EMPTY_PLANT = {
+  speciesId: 'starter-fern',
   createdAt: '',
   level: 1,
   xp: 0,
@@ -43,6 +44,7 @@ const EMPTY_PLANT = {
 
 export interface PlantDashboardData {
   plant: {
+    speciesId: string
     level: number
     xp: number
     stage: string
@@ -75,17 +77,16 @@ export async function getPlantDashboardData(): Promise<PlantDashboardData> {
   const now = getDevNowIso()
   const { monday, sunday } = isoWeekBounds(todayKey)
   const sevenDayStart = addDateKeyDays(todayKey, -6)
-  const [plantRecord, streak, dueCount, weekSessionCount, totalSessions, recentSessions, skinUnlocks, activeSkinId] =
-    await Promise.all([
-      getActivePlant(),
-      getStreak(),
-      getDueCount(),
-      getWeekSessionCount(monday, sunday),
-      getTotalSessionCount(),
-      listSessions(4),
-      listUnlockedSkinHistory(4),
-      getSetting('activeSkin'),
-    ])
+  // Expo SQLite on the new architecture has been unstable with dense parallel reads
+  // against the same connection. Keep this dashboard fetch serialized.
+  const plantRecord = await getActivePlant()
+  const streak = await getStreak()
+  const dueCount = await getDueCount()
+  const weekSessionCount = await getWeekSessionCount(monday, sunday)
+  const totalSessions = await getTotalSessionCount()
+  const recentSessions = await listSessions(4)
+  const skinUnlocks = await listUnlockedSkinHistory(4)
+  const activeSkinId = await getSetting('activeSkin')
   const last7SessionRows = await listSessionsInRange(sevenDayStart, todayKey)
 
   const plant = plantRecord ?? {
@@ -153,6 +154,7 @@ export async function getPlantDashboardData(): Promise<PlantDashboardData> {
 
   return {
     plant: {
+      speciesId: plant.speciesId,
       level: plant.level,
       xp: plant.xp,
       stage: plant.stage,
