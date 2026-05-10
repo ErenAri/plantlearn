@@ -1,4 +1,4 @@
-export type SkillType = 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'speaking'
+export type SkillType = 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'speaking' | 'writing'
 
 export type Difficulty = 'easy' | 'medium' | 'hard'
 
@@ -43,7 +43,7 @@ export interface Quest {
   done: boolean
 }
 
-export type DailyQuestId = 'review_5' | 'listening_1' | 'speaking_1' | 'grammar_1' | 'reading_1'
+export type DailyQuestId = 'review_5' | 'listening_1' | 'speaking_1' | 'grammar_1' | 'reading_1' | 'writing_1'
 
 export interface DailyQuestState {
   id: DailyQuestId
