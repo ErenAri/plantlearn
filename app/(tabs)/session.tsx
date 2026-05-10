@@ -31,7 +31,6 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated'
 
-/* ── constants ─────────────────────────────── */
 const MAX_WARMUP_CARDS = 5
 const WARMUP_TIME_LIMIT_MS = 60_000
 const RECOVERY_TIME_LIMIT_MS = 120_000
@@ -39,7 +38,6 @@ const RECOVERY_TIME_LIMIT_MS = 120_000
 type Step = 'warmup' | 'focus' | 'listening' | 'speaking' | 'grammar' | 'reading' | 'summary'
 type LessonResult = ListeningResult | SpeakingResult | GrammarResult | ReadingResult
 
-/* ── main screen ───────────────────────────── */
 export default function SessionScreen() {
   const theme = useTheme()
   const params = useLocalSearchParams<{ recovery?: string }>()
@@ -53,14 +51,13 @@ export default function SessionScreen() {
   const [loading, setLoading] = useState(true)
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
-  const [warmupScore, setWarmupScore] = useState({ correct: 0, wrong: 0 })
+  const [warmupScore, setWarmupScore] = useState({ correct: 0, hard: 0, wrong: 0, reviewed: 0 })
   const [saving, setSaving] = useState(false)
   const [summary, setSummary] = useState<SessionSummaryData | null>(null)
   const [achievementQueue, setAchievementQueue] = useState<string[]>([])
   const [activeSkinId, setActiveSkinId] = useState('classic')
   const startTime = useRef(Date.now())
 
-  // Card flip animation
   const flipProgress = useSharedValue(0)
   const swipeX = useSharedValue(0)
   const cardFlipStyle = useAnimatedStyle(() => ({
@@ -84,19 +81,16 @@ export default function SessionScreen() {
     top: 0, left: 0, right: 0, bottom: 0,
   }))
 
-  // Summary celebration
   const celebrationScale = useSharedValue(0)
   const celebrationStyle = useAnimatedStyle(() => ({
     transform: [{ scale: celebrationScale.value }],
     opacity: celebrationScale.value,
   }))
 
-  // Step indicator
   const STEP_NAMES = ['warmup', 'focus', 'lesson', 'summary'] as const
   const stepIndex = step === 'warmup' ? 0 : step === 'focus' ? 1 : (step === 'listening' || step === 'speaking' || step === 'grammar' || step === 'reading') ? 2 : 3
   const [showConfetti, setShowConfetti] = useState(false)
 
-  /* load due cards once on mount */
   const loadCards = useCallback(async () => {
     setLoading(true)
     const due = await getDueCards(MAX_WARMUP_CARDS)
@@ -122,11 +116,9 @@ export default function SessionScreen() {
 
   const currentCard = cards[index]
 
-  /* check time limit */
   const warmupLimit = isRecovery ? RECOVERY_TIME_LIMIT_MS : WARMUP_TIME_LIMIT_MS
   const isTimedOut = () => Date.now() - startTime.current >= warmupLimit
 
-  /* ── SRS rating handlers ─────────────────── */
   async function handleRate(rating: 0 | 2 | 3 | 5) {
     if (!currentCard) return
     await reviewCard(currentCard.id, rating)
@@ -139,7 +131,9 @@ export default function SessionScreen() {
     }
     const nextWarmupScore = {
       correct: rating >= 3 ? warmupScore.correct + 1 : warmupScore.correct,
-      wrong: rating < 2 ? warmupScore.wrong + 1 : warmupScore.wrong,
+      hard: rating === 2 ? warmupScore.hard + 1 : warmupScore.hard,
+      wrong: rating === 0 ? warmupScore.wrong + 1 : warmupScore.wrong,
+      reviewed: warmupScore.reviewed + 1,
     }
     setWarmupScore(nextWarmupScore)
     setRevealed(false)
@@ -152,8 +146,8 @@ export default function SessionScreen() {
         void persistCompletedSession({
           skillType: 'vocabulary',
           correct: nextWarmupScore.correct,
-          wrong: nextWarmupScore.wrong,
-          reviewCount: nextWarmupScore.correct + nextWarmupScore.wrong,
+          wrong: nextWarmupScore.wrong + nextWarmupScore.hard,
+          reviewCount: nextWarmupScore.reviewed,
           durationSec: Math.round((Date.now() - startTime.current) / 1000),
         })
       } else {
@@ -162,24 +156,26 @@ export default function SessionScreen() {
     }
   }
 
-  /* ── skip warmup if no cards ─────────────── */
   useEffect(() => {
     if (!loading && cards.length === 0) {
       if (isRecovery) {
-        void persistCompletedSession({
-          skillType: 'vocabulary',
-          correct: warmupScore.correct,
-          wrong: warmupScore.wrong,
-          reviewCount: warmupScore.correct + warmupScore.wrong,
-          durationSec: Math.round((Date.now() - startTime.current) / 1000),
+        setStep('summary')
+        setSummary({
+          rewards: { xp: 0, nutrients: { water: 0, sun: 0, fertilizer: 0, roots: 0 } },
+          oldStreak: 0,
+          newStreak: 0,
+          oldPlant: { level: 1, xp: 0, health: 100, stage: 'seed', totalWater: 0, totalSun: 0, totalFertilizer: 0, totalRoots: 0 },
+          newPlant: { level: 1, xp: 0, health: 100, stage: 'seed', totalWater: 0, totalSun: 0, totalFertilizer: 0, totalRoots: 0 },
+          correct: 0,
+          wrong: 0,
+          skinUnlocked: null,
         })
       } else {
         setStep('focus')
       }
     }
-  }, [cards.length, isRecovery, loading, warmupScore.correct, warmupScore.wrong])
+  }, [cards.length, isRecovery, loading])
 
-  /* ── finish & persist ────────────────────── */
   async function persistCompletedSession(input: {
     skillType: SkillType
     correct: number
@@ -247,7 +243,7 @@ export default function SessionScreen() {
       skillType,
       correct: result.correct,
       wrong: result.wrong,
-      reviewCount: warmupScore.correct + warmupScore.wrong,
+      reviewCount: warmupScore.reviewed,
       accuracy: result.accuracy,
       difficulty: result.difficulty,
       durationSec: result.durationSec,
@@ -258,7 +254,7 @@ export default function SessionScreen() {
     setStep('warmup')
     setIndex(0)
     setRevealed(false)
-    setWarmupScore({ correct: 0, wrong: 0 })
+    setWarmupScore({ correct: 0, hard: 0, wrong: 0, reviewed: 0 })
     setSummary(null)
     setSaving(false)
     startTime.current = Date.now()
@@ -270,7 +266,6 @@ export default function SessionScreen() {
     loadCards()
   }
 
-  /* ── loading state ───────────────────────── */
   if (loading) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
@@ -279,7 +274,6 @@ export default function SessionScreen() {
     )
   }
 
-  /* ── STEP 1: SRS Warmup ──────────────────── */
   if (step === 'warmup') {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -347,7 +341,6 @@ export default function SessionScreen() {
     )
   }
 
-  /* ── STEP 2: Focus Chooser ───────────────── */
   if (step === 'focus') {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.background }]}>
@@ -404,7 +397,6 @@ export default function SessionScreen() {
     return <ReadingLesson onComplete={handleReadingComplete} />
   }
 
-  /* ── STEP 3: Summary ─────────────────────── */
   if (step === 'summary' && summary) {
     const r = summary.rewards
     const xpGained = summary.newPlant.xp - summary.oldPlant.xp
