@@ -20,6 +20,7 @@ export const SKILL_NUTRIENT_WEIGHTS: Record<string, { water: number; sun: number
   listening: { water: 0.8, sun: 1.0, fertilizer: 0.4, roots: 1.0 },
   reading: { water: 0.4, sun: 0.6, fertilizer: 1.2, roots: 1.0 },
   speaking: { water: 0.6, sun: 1.4, fertilizer: 0.4, roots: 0.8 },
+  writing: { water: 0.5, sun: 0.8, fertilizer: 1.2, roots: 0.9 },
 }
 
 export const BASE_XP = 20
