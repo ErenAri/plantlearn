@@ -105,22 +105,22 @@ function isPlantStage(value: string): value is PlantStage {
 
 function getStageMetrics(stage: PlantStage) {
   if (stage === 'seed') {
-    return { plantScale: 0.62, shadowWidth: '36%', shadowHeight: 16, lift: 10 }
+    return { plantScale: 0.9, shadowWidth: '42%', shadowHeight: 18, lift: 14 }
   }
 
   if (stage === 'sprout') {
-    return { plantScale: 0.66, shadowWidth: '40%', shadowHeight: 18, lift: 8 }
+    return { plantScale: 0.92, shadowWidth: '44%', shadowHeight: 19, lift: 10 }
   }
 
   if (stage === 'sapling') {
-    return { plantScale: 0.82, shadowWidth: '48%', shadowHeight: 22, lift: 2 }
+    return { plantScale: 0.98, shadowWidth: '48%', shadowHeight: 22, lift: 2 }
   }
 
   if (stage === 'mature') {
-    return { plantScale: 0.94, shadowWidth: '58%', shadowHeight: 24, lift: -2 }
+    return { plantScale: 1.03, shadowWidth: '58%', shadowHeight: 24, lift: -2 }
   }
 
-  return { plantScale: 0.96, shadowWidth: '60%', shadowHeight: 25, lift: -2 }
+  return { plantScale: 1.06, shadowWidth: '60%', shadowHeight: 25, lift: -2 }
 }
 
 function getTreeBundle(speciesId: string) {
@@ -241,14 +241,14 @@ export function PlantHeroScene({
       />
 
       <Animated.View pointerEvents="none" style={[styles.assetLayer, plantMotionStyle]}>
-        <Animated.View style={[styles.assetPlane, backLayerStyle, { opacity: clamp01(1 - stressOpacity * 0.52) }]}>
+        <Animated.View style={[styles.assetPlane, styles.assetPlaneBack, backLayerStyle, { opacity: clamp01(1 - stressOpacity * 0.52) }]}>
           <Image
             source={treeAssets.healthy[stageKey]}
             style={styles.assetImage}
             resizeMode="contain"
           />
         </Animated.View>
-        <Animated.View style={[styles.assetPlane, frontLayerStyle, { opacity: stressOpacity }]}>
+        <Animated.View style={[styles.assetPlane, styles.assetPlaneFront, frontLayerStyle, { opacity: stressOpacity }]}>
           <Image
             source={treeAssets.unhealthy[stageKey]}
             style={styles.assetImage}
@@ -323,11 +323,18 @@ const styles = StyleSheet.create({
   assetPlane: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: '6%',
+  },
+  assetPlaneBack: {
+    paddingHorizontal: '4%',
+  },
+  assetPlaneFront: {
+    paddingHorizontal: '4%',
   },
   assetImage: {
-    height: '92%',
-    width: '92%',
+    height: '100%',
+    width: '100%',
   },
   dryVeil: {
     ...StyleSheet.absoluteFillObject,
