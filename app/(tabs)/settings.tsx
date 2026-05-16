@@ -10,7 +10,7 @@ import {
     saveNotificationSettings,
     syncNotifications,
 } from '@/hooks/useNotifications'
-import { useTheme } from '@/hooks/useTheme'
+import { useTheme, useThemeMode } from '@/hooks/useTheme'
 import i18n from '@/i18n'
 import { getPlacementState } from '@/services/placement'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -29,6 +29,7 @@ const TIER_COLORS: Record<string, string> = {
 
 export default function SettingsScreen() {
   const theme = useTheme()
+  const { mode: themeMode, setMode: setThemeMode } = useThemeMode()
   const router = useRouter()
   const { t } = useTranslation()
   const [resetting, setResetting] = useState(false)
@@ -159,6 +160,30 @@ export default function SettingsScreen() {
               title={t('settings.english')}
               variant={i18n.language === 'en' ? 'primary' : 'ghost'}
               onPress={() => changeLanguage('en')}
+              style={styles.hourBtn}
+            />
+          </View>
+        </Card>
+
+        <Card style={styles.card} tone="muted">
+          <Text style={[typography.body, { color: theme.text, fontWeight: '600' }]}>{t('settings.theme')}</Text>
+          <View style={styles.hourRow}>
+            <Button
+              title={t('settings.themeSystem')}
+              variant={themeMode === 'system' ? 'primary' : 'ghost'}
+              onPress={() => void setThemeMode('system')}
+              style={styles.hourBtn}
+            />
+            <Button
+              title={t('settings.themeLight')}
+              variant={themeMode === 'light' ? 'primary' : 'ghost'}
+              onPress={() => void setThemeMode('light')}
+              style={styles.hourBtn}
+            />
+            <Button
+              title={t('settings.themeDark')}
+              variant={themeMode === 'dark' ? 'primary' : 'ghost'}
+              onPress={() => void setThemeMode('dark')}
               style={styles.hourBtn}
             />
           </View>

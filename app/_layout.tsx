@@ -4,25 +4,31 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { dark, light } from '@/constants/Colors';
-import { getSetting } from '@/db';
+import { dark, light, type ThemeColors } from '@/constants/Colors';
+import { getSetting, setSetting } from '@/db';
 import { loadAudioSetting } from '@/hooks/useAudio';
 import { useDatabase } from '@/hooks/useDatabase';
 import { loadHapticSetting } from '@/hooks/useHaptics';
+import { ThemeProvider as AppThemeProvider, type ThemeMode } from '@/hooks/useTheme';
 import '@/i18n';
 import i18n from '@/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const systemColorScheme = useColorScheme();
   const { ready } = useDatabase();
-  const colors = colorScheme === 'dark' ? dark : light;
-  const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
+  const [themeReady, setThemeReady] = useState(false);
+  const colors = useMemo<ThemeColors>(() => {
+    const activeScheme = themeMode === 'system' ? systemColorScheme ?? 'light' : themeMode;
+    return activeScheme === 'dark' ? dark : light;
+  }, [systemColorScheme, themeMode]);
+  const baseTheme = themeMode === 'dark' || (themeMode === 'system' && systemColorScheme === 'dark') ? DarkTheme : DefaultTheme;
   const navigationTheme = {
     ...baseTheme,
     colors: {
@@ -51,6 +57,10 @@ export default function RootLayout() {
       if (savedLang && savedLang !== i18n.language) {
         await i18n.changeLanguage(savedLang);
       }
+      const savedTheme = await getSetting('themeMode');
+      if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'system') {
+        setThemeMode(savedTheme);
+      }
       setLangReady(true);
 
       await Promise.all([loadAudioSetting(), loadHapticSetting()]);
@@ -59,23 +69,38 @@ export default function RootLayout() {
       setOnboarded(ob === '1');
 
       SplashScreen.hideAsync();
+      setThemeReady(true);
     })();
   }, [ready]);
 
-  if (!ready || !fontsLoaded || !langReady || onboarded === null) {
+  if (!ready || !fontsLoaded || !langReady || !themeReady || onboarded === null) {
     return null;
   }
 
+  const activeScheme = themeMode === 'system' ? systemColorScheme ?? 'light' : themeMode;
+  const statusBarStyle = activeScheme === 'dark' ? 'light' : 'dark';
+
+  const themeContextValue = {
+    colors,
+    mode: themeMode,
+    setMode: async (next: ThemeMode) => {
+      setThemeMode(next);
+      await setSetting('themeMode', next);
+    },
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={navigationTheme}>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false }}>
-          {!onboarded && <Stack.Screen name="onboarding" />}
-          <Stack.Screen name="placement" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </ThemeProvider>
+      <AppThemeProvider value={themeContextValue}>
+        <ThemeProvider value={navigationTheme}>
+          <StatusBar style={statusBarStyle} />
+          <Stack screenOptions={{ headerShown: false }}>
+            {!onboarded && <Stack.Screen name="onboarding" />}
+            <Stack.Screen name="placement" />
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+        </ThemeProvider>
+      </AppThemeProvider>
     </GestureHandlerRootView>
   );
 }
